@@ -3,9 +3,16 @@
   "version": "1.0.0",
   "description": "Monorepo for a **GenAI-based movie/show recommendation system**.",
   "main": "index.js",
+  "engines": {
+    "node": "22.22.1",
+    "npm": "10.9.4"
+  },
   "scripts": {
     "prepare": "husky",
     "validate:branch": "sh .husky/validate-branch-name.sh",
+    "validate:node": "sh .husky/validate-node-version.sh",
+    "validate:python": "sh .husky/validate-python-version.sh",
+    "validate:runtime": "npm run validate:node && npm run validate:python",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "sync:api": "cd apps/api && uv sync --dev",
