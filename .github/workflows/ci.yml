@@ -50,9 +50,9 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
-  # ─── JOB 2: Web ESLint + Vitest ───────────────────────────────────
+  # ─── JOB 2: Web ESLint + TypeScript + Vitest ──────────────────────
   web:
-    name: Web lint & test
+    name: Web lint, typecheck & test
     runs-on: ubuntu-latest
 
     steps:
@@ -65,15 +65,17 @@ jobs:
           # Web app has its own .nvmrc (same version, deploy-scoped)
           node-version-file: apps/web/.nvmrc
           cache: npm
-          # Web's lockfile — separate from root
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
 
-      # Next.js deps only — no root npm install needed
+      - name: Install root dependencies
+        run: npm ci
+
       - name: Install web dependencies
         working-directory: apps/web
         run: npm ci
 
-      # Runs from repo root; package.json script cds into apps/web
       - name: Run web checks
         run: npm run check:web
 
@@ -112,9 +114,10 @@ jobs:
       - name: Run API checks
         run: npm run check:api
 
-  # ─── JOB 4: Next.js production build (Stage 3) ────────────────────
+  # ─── JOB 4: Next.js production build (after format + web pass) ─────
   web-build:
     name: Web build
+    needs: [format, web]
     runs-on: ubuntu-latest
 
     steps:
