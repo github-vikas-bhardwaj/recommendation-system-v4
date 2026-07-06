@@ -282,27 +282,91 @@ Runs on **pull requests** and **pushes to `main`**. Seven quality jobs run **in 
 
 CI pins **exact** Node locally in Actions; Vercel uses `engines` (`>=22.22.0`) instead — see [Node version strategy](#node-version-strategy).
 
-## Deploy (Vercel — web)
+## Deployment
 
-| Setting             | Value              |
-| ------------------- | ------------------ |
-| **Root Directory**  | `apps/web`         |
-| **Framework**       | Next.js            |
-| **Node.js Version** | `22.x` (dashboard) |
-| **Build Command**   | `npm run build`    |
-| **Install Command** | `npm ci`           |
+Push to `main` → **Vercel** (web) and **Render** (API) auto-deploy. CI runs on PRs and `main` before merge.
+
+### Live URLs
+
+| App              | URL                                                                           | Health check                                                                                    |
+| ---------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Web** (Vercel) | https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app | [/health](https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app/health) |
+| **API** (Render) | https://recommendation-system-v4.onrender.com                                 | [/health](https://recommendation-system-v4.onrender.com/health)                                 |
+
+Expected web `/health` response:
+
+```json
+{ "status": "ok", "appEnv": "production", "apiUrlConfigured": true }
+```
+
+Expected API `/health` response:
+
+```json
+{ "detail": "Up and running" }
+```
+
+Vercel also assigns a **production domain** in project settings (e.g. `recommendation-system-v4.vercel.app`). Per-deployment preview URLs change; set `NEXT_PUBLIC_APP_URL` to the URL you want baked into the client bundle, then redeploy.
+
+### Architecture
+
+```
+GitHub (main)
+    ├── Vercel  → apps/web  → public UI + BFF
+    └── Render  → apps/api  → FastAPI (not exposed to browser directly)
+```
+
+Web calls API server-side via `API_URL` (BFF). Never put `API_URL` in `NEXT_PUBLIC_*`.
+
+### Vercel (web)
+
+| Setting              | Value                   |
+| -------------------- | ----------------------- |
+| **Root Directory**   | `apps/web`              |
+| **Framework Preset** | **Next.js** (not Other) |
+| **Node.js Version**  | `22.x`                  |
+| **Build Command**    | `npm run build`         |
+| **Install Command**  | `npm ci`                |
+| **Output Directory** | default (blank)         |
 
 **Environment variables** (Production + Preview):
 
-| Variable              | Example                                                              |
-| --------------------- | -------------------------------------------------------------------- |
-| `APP_ENV`             | `production`                                                         |
-| `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` (update after first deploy + redeploy) |
-| `API_URL`             | `https://your-api.onrender.com` (or placeholder until API is live)   |
-
-Merge to `main` → Vercel auto-deploys. CI **Web build** job mirrors the Vercel build step.
+| Variable              | Production value                                                                |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `APP_ENV`             | `production`                                                                    |
+| `NEXT_PUBLIC_APP_URL` | `https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app` |
+| `API_URL`             | `https://recommendation-system-v4.onrender.com`                                 |
 
 Details: [apps/web/README.md](apps/web/README.md#deploy-vercel).
+
+### Render (API)
+
+| Setting            | Value                                                  |
+| ------------------ | ------------------------------------------------------ |
+| **Root Directory** | `apps/api`                                             |
+| **Runtime**        | Python 3                                               |
+| **Build Command**  | `uv sync --frozen --no-dev`                            |
+| **Start Command**  | `uv run uvicorn index:app --host 0.0.0.0 --port $PORT` |
+| **Instance Type**  | Free (sleeps after idle; cold start ~30–60s)           |
+
+**Environment variables:**
+
+| Variable            | Value                                  |
+| ------------------- | -------------------------------------- |
+| `ENV`               | `production`                           |
+| `LANGSMITH_API_KEY` | your key (optional until LLM features) |
+| `LANGSMITH_PROJECT` | `recommendation-system-v4`             |
+
+Details: [apps/api/README.md](apps/api/README.md#deploy-render).
+
+### Common deploy failures
+
+| Symptom                                   | Fix                                                               |
+| ----------------------------------------- | ----------------------------------------------------------------- |
+| Vercel sitewide `404: NOT_FOUND`          | Root Directory = `apps/web`, Framework = **Next.js**, redeploy    |
+| Vercel `EBADENGINE`                       | `engines.node` = `>=22.22.0`, no `engines.npm`                    |
+| Web `/health` → `apiUrlConfigured: false` | Set `API_URL` on Vercel → redeploy                                |
+| Render build fails                        | Root Directory = `apps/api`, use `uv sync` not `requirements.txt` |
+| Slow first API request                    | Render free tier cold start after sleep                           |
 
 ## Git
 

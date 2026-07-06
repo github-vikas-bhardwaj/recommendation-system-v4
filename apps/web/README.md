@@ -30,20 +30,44 @@ Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **e
 
 ## Deploy (Vercel)
 
+**Live:** https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app  
+**Health:** [/health](https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app/health) → `{"status":"ok","appEnv":"production","apiUrlConfigured":true}`
+
+### First-time setup
+
 1. Import repo → **Root Directory:** `apps/web`
-2. **Node.js Version:** `22.x` in project settings
-3. Add env vars before first deploy:
+2. **Framework Preset:** **Next.js** (not Other — sitewide 404 if wrong)
+3. **Node.js Version:** `22.x` in project settings
+4. Add env vars, then deploy
 
-| Variable              | First deploy            | After deploy                               |
-| --------------------- | ----------------------- | ------------------------------------------ |
-| `APP_ENV`             | `production`            | `production`                               |
-| `NEXT_PUBLIC_APP_URL` | placeholder OK          | **real** `https://….vercel.app` + redeploy |
-| `API_URL`             | `http://127.0.0.1:8000` | Render API URL when live                   |
+| Variable              | Production value                                                                |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `APP_ENV`             | `production`                                                                    |
+| `NEXT_PUBLIC_APP_URL` | `https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app` |
+| `API_URL`             | `https://recommendation-system-v4.onrender.com`                                 |
 
-4. **Deploy** → verify `/` and `/health`
-5. Update `NEXT_PUBLIC_APP_URL` to production URL → **Redeploy** (`NEXT_PUBLIC_*` is baked at build time)
+5. Verify `/` and `/health`
+6. If you change `NEXT_PUBLIC_APP_URL`, **redeploy** (`NEXT_PUBLIC_*` is baked at build time)
 
-**Common failure:** `EBADENGINE` — `engines` too strict or `npm` pinned in `package.json`. Use `>=22.22.0` and drop `engines.npm`.
+### Project settings
+
+| Setting          | Value           |
+| ---------------- | --------------- |
+| Root Directory   | `apps/web`      |
+| Framework Preset | Next.js         |
+| Build Command    | `npm run build` |
+| Install Command  | `npm ci`        |
+| Output Directory | default (blank) |
+
+**Common failures:**
+
+| Symptom                   | Fix                                                        |
+| ------------------------- | ---------------------------------------------------------- |
+| `EBADENGINE`              | `engines.node` = `>=22.22.0`, drop `engines.npm`           |
+| Sitewide `404: NOT_FOUND` | Framework = Next.js, Root Directory = `apps/web`, redeploy |
+| `apiUrlConfigured: false` | Set `API_URL` → redeploy                                   |
+
+See also [root README — Deployment](../../README.md#deployment).
 
 ## First-time setup
 
