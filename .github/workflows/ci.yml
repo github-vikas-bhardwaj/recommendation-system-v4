@@ -1,147 +1,146 @@
-# Workflow name shown in GitHub Actions tab
 name: CI
 
-# When this workflow runs
 on:
-  # Run on pushes to main (after merge)
   push:
-    # Only the main branch — feature branches push via PR instead
     branches: [main]
-  # Run on every pull request (any branch → main)
   pull_request:
 
-# Cancel older runs on the same branch when a new push happens
 concurrency:
-  # Unique group per workflow + git ref (branch/PR)
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  # Stop the previous run instead of waiting
   cancel-in-progress: true
 
-# All jobs below run IN PARALLEL (no "needs:" between them)
 jobs:
-  # ─── JOB 1: Prettier (whole monorepo) ─────────────────────────────
   format:
-    # Display name in GitHub UI / branch protection
     name: Format
-    # GitHub-hosted Linux runner
     runs-on: ubuntu-latest
-
     steps:
-      # Clone your repo into the runner
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      # Install Node using version from root .nvmrc (22.22.1)
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          # Read Node version from this file at repo root
           node-version-file: .nvmrc
-          # Cache npm downloads between runs
           cache: npm
-          # Lockfile used for cache key (root only — Prettier lives here)
           cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run format:check
 
-      # Install Husky, Prettier, commitlint, etc. (exact versions from lockfile)
-      - name: Install root dependencies
-        run: npm ci
-
-      # Same command as locally — fails if any file isn't Prettier-clean
-      - name: Check formatting
-        run: npm run format:check
-
-  # ─── JOB 2: Web ESLint + TypeScript + Vitest ──────────────────────
-  web:
-    name: Web lint, typecheck & test
+  web-lint:
+    name: Web lint
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          # Web app has its own .nvmrc (same version, deploy-scoped)
           node-version-file: apps/web/.nvmrc
           cache: npm
           cache-dependency-path: |
             package-lock.json
             apps/web/package-lock.json
-
-      - name: Install root dependencies
+      - run: npm ci
+      - working-directory: apps/web
         run: npm ci
+      - run: npm run lint:web
 
-      - name: Install web dependencies
-        working-directory: apps/web
-        run: npm ci
-
-      - name: Run web checks
-        run: npm run check:web
-
-  # ─── JOB 3: API Ruff + Pyright + pytest ───────────────────────────
-  api:
-    name: API lint, types & test
+  web-typecheck:
+    name: Web typecheck
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+      - run: npm ci
+      - working-directory: apps/web
+        run: npm ci
+      - run: npm run typecheck:web
 
-      # Root npm needed for "npm run sync:api" and "npm run check:api" scripts
-      - name: Setup Node
-        uses: actions/setup-node@v6
+  web-test:
+    name: Web test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+      - run: npm ci
+      - working-directory: apps/web
+        run: npm ci
+      - run: npm run test:web
+
+  api-lint:
+    name: API lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: package-lock.json
-
-      # Install uv + Python 3.12.12 from apps/api/.python-version + pyproject.toml
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v8.3.0
+      - uses: astral-sh/setup-uv@v8.3.0
         with:
           working-directory: apps/api
+      - run: npm ci
+      - run: npm run sync:api
+      - run: npm run lint:api:check
 
-      - name: Install root dependencies
-        run: npm ci
+  api-typecheck:
+    name: API typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: astral-sh/setup-uv@v8.3.0
+        with:
+          working-directory: apps/api
+      - run: npm ci
+      - run: npm run sync:api
+      - run: npm run typecheck:api
 
-      # uv sync --dev → creates .venv, installs Ruff, Pyright, pytest, etc.
-      - name: Install API dependencies
-        run: npm run sync:api
+  api-test:
+    name: API test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - uses: astral-sh/setup-uv@v8.3.0
+        with:
+          working-directory: apps/api
+      - run: npm ci
+      - run: npm run sync:api
+      - run: npm run test:api
 
-      # Ruff check + Pyright + pytest
-      - name: Run API checks
-        run: npm run check:api
-
-  # ─── JOB 4: Next.js production build (after format + web pass) ─────
   web-build:
     name: Web build
-    needs: [format, web]
+    needs: [format, web-lint, web-typecheck, web-test]
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version-file: apps/web/.nvmrc
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
-
-      - name: Install web dependencies
-        working-directory: apps/web
+      - working-directory: apps/web
         run: npm ci
-
-      # next build — proves prod compile works (like Vercel will do)
-      - name: Build Next.js
-        working-directory: apps/web
+      - working-directory: apps/web
         env:
-          # Required by lib/env/server.ts
           APP_ENV: production
-          # Required by lib/env/public.ts (dummy URL for CI — not a real deploy)
           NEXT_PUBLIC_APP_URL: http://localhost:3000
-          # Required by lib/env/server.ts (dummy — build doesn't call API)
           API_URL: http://127.0.0.1:8000
         run: npm run build

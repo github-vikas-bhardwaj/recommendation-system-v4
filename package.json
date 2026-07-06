@@ -31,7 +31,8 @@
     "lint:web:fix": "cd apps/web && npm run lint:fix",
     "typecheck:web": "cd apps/web && npm run typecheck",
     "check:web": "npm run lint:web && npm run typecheck:web && npm run test:web",
-    "check": "npm run format:check && npm run check:web && npm run check:api"
+    "check": "npm run format:check && npm run check:web && npm run check:api",
+    "check:push": "npm run check"
   },
   "repository": {
     "type": "git",
