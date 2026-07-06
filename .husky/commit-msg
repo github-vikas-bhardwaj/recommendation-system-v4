@@ -1,0 +1,3 @@
+set -e
+echo "🔍 Running commit-msg checks..."
+npx --no -- commitlint --edit "$1"

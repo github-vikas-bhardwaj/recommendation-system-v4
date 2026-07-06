@@ -1,0 +1,57 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.12.12"
+dependencies = [
+    "fastapi==0.139.0",
+    "langsmith==0.9.7",
+    "pydantic-settings==2.14.2",
+    "python-dotenv==1.2.2",
+    "uvicorn==0.49.0",
+]
+
+[dependency-groups]
+dev = [
+    "pyright==1.1.411",
+    "pytest==9.1.1",
+    "ruff==0.15.20",
+    "httpx2==2.5.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["."]
+exclude = [".venv", "__pycache__"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors (spacing, etc.)
+    "F",   # pyflakes (unused imports, undefined names)
+    "I",   # isort (import order)
+    "UP",  # pyupgrade (modern Python syntax)
+    "B",   # bugbear (common bugs)
+]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "schemas"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.pyright]
+pythonVersion = "3.12"
+include = ["."]
+exclude = [".venv", "**/__pycache__", ".pytest_cache"]
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
+reportMissingTypeStubs = false

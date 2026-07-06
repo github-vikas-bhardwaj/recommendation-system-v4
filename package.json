@@ -1,0 +1,61 @@
+{
+  "name": "recommendation-system-v4",
+  "version": "1.0.0",
+  "description": "Monorepo for a **GenAI-based movie/show recommendation system**.",
+  "main": "index.js",
+  "scripts": {
+    "prepare": "husky",
+    "validate:branch": "sh .husky/validate-branch-name.sh",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "sync:api": "cd apps/api && uv sync --dev",
+    "dev:api": "cd apps/api && uv run uvicorn index:app --reload",
+    "dev:web": "cd apps/web && npm run dev",
+    "dev:web:https": "cd apps/web && npm run dev:https",
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:https": "concurrently -n api,web -c blue,green \"npm run dev:api\" \"npm run dev:web:https\"",
+    "lint:api": "cd apps/api && uv run ruff check --fix . && uv run ruff format .",
+    "lint:api:check": "cd apps/api && uv run ruff check . && uv run ruff format --check .",
+    "typecheck:api": "cd apps/api && uv run pyright",
+    "test:api": "cd apps/api && uv run pytest",
+    "check:api": "npm run lint:api:check && npm run typecheck:api && npm run test:api",
+    "test:web": "cd apps/web && npm run test:run",
+    "lint:web": "cd apps/web && npm run lint",
+    "lint:web:fix": "cd apps/web && npm run lint:fix",
+    "check:web": "npm run lint:web && npm run test:web",
+    "check": "npm run format:check && npm run check:web && npm run check:api"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/github-vikas-bhardwaj/recommendation-system-v4.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/github-vikas-bhardwaj/recommendation-system-v4/issues"
+  },
+  "homepage": "https://github.com/github-vikas-bhardwaj/recommendation-system-v4#readme",
+  "devDependencies": {
+    "@commitlint/cli": "21.2.0",
+    "@commitlint/config-conventional": "21.2.0",
+    "@commitlint/types": "21.2.0",
+    "concurrently": "10.0.3",
+    "husky": "9.1.7",
+    "lint-staged": "17.0.8",
+    "prettier": "3.9.4",
+    "prettier-plugin-tailwindcss": "0.8.0",
+    "typescript": "6.0.3"
+  },
+  "lint-staged": {
+    "apps/api/**/*.py": [
+      "bash -c 'cd apps/api && uv run ruff check --fix \"$@\"' _",
+      "bash -c 'cd apps/api && uv run ruff format \"$@\"' _"
+    ],
+    "*.{json,md,yml,yaml,ts}": "prettier --write",
+    "apps/web/**/*.{js,jsx,ts,tsx,mjs,cjs,css,md,json}": [
+      "bash -c 'cd apps/web && npx eslint --fix \"$@\"' _",
+      "prettier --write"
+    ]
+  }
+}
