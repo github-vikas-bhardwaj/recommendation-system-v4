@@ -29,8 +29,10 @@
     "test:web": "cd apps/web && npm run test:run",
     "lint:web": "cd apps/web && npm run lint",
     "lint:web:fix": "cd apps/web && npm run lint:fix",
-    "check:web": "npm run lint:web && npm run test:web",
-    "check": "npm run format:check && npm run check:web && npm run check:api"
+    "typecheck:web": "cd apps/web && npm run typecheck",
+    "check:web": "npm run lint:web && npm run typecheck:web && npm run test:web",
+    "check": "npm run format:check && npm run check:web && npm run check:api",
+    "check:push": "npm run check"
   },
   "repository": {
     "type": "git",

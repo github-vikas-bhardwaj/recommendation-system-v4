@@ -15,7 +15,8 @@
     "lint:fix": "eslint --fix",
     "test": "vitest",
     "test:run": "vitest run",
-    "check": "npm run lint && npm run test:run"
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm run test:run"
   },
   "dependencies": {
     "next": "16.2.10",

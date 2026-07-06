@@ -4,4 +4,4 @@ echo "🔍 Running pre-commit checks..."
 npm run validate:runtime
 npm run validate:branch
 npx lint-staged
-npm run check
+npm run format:check

@@ -1,118 +1,154 @@
 # Web
 
-Next.js frontend for the recommendation system.
+Next.js frontend for the recommendation system. Acts as the **public entry** and **BFF** — no LLM logic in the browser.
 
 ## Stack
 
-| Layer     | Technology                            |
-| --------- | ------------------------------------- |
-| Framework | Next.js 16                            |
-| UI        | React 19                              |
-| Styling   | Tailwind CSS 4                        |
-| Lint      | ESLint 9                              |
-| Test      | Vitest + React Testing Library        |
-| Format    | Prettier (root `prettier.config.mjs`) |
+| Layer     | Technology                     |
+| --------- | ------------------------------ |
+| Framework | Next.js 16                     |
+| UI        | React 19                       |
+| Styling   | Tailwind CSS 4                 |
+| Lint      | ESLint 9                       |
+| Types     | TypeScript (`tsc --noEmit`)    |
+| Test      | Vitest + React Testing Library |
+| Format    | Prettier (root config)         |
+
+## Runtime
+
+| File                            | Value                |
+| ------------------------------- | -------------------- |
+| `apps/web/.nvmrc`               | `22.22.1`            |
+| `package.json` → `engines.node` | `22.22.1`            |
+| `apps/web/.npmrc`               | `engine-strict=true` |
+
+Use `nvm use` / `fnm use` in `apps/web` (or root `.nvmrc` for monorepo scripts).
 
 ## First-time setup
 
 From repo root:
 
 ```bash
+nvm use
 npm install
-npm run prepare              # Husky hooks
+npm run prepare
 cd apps/web && npm install
 ```
 
+Copy env template:
+
+```bash
+cp apps/web/.env.example apps/web/.env.local
+```
+
+## Environment variables
+
+| File           | Purpose                                      |
+| -------------- | -------------------------------------------- |
+| `.env.local`   | Local dev secrets (gitignored)               |
+| `.env.example` | Template for onboarding / Vercel (committed) |
+
+### Modules
+
+```
+lib/env/
+├── public.ts    # NEXT_PUBLIC_* — safe for client components
+├── server.ts    # API_URL, APP_ENV — server-only (import "server-only")
+└── required.ts  # shared helper
+```
+
+| Variable              | Scope                  | Local example           |
+| --------------------- | ---------------------- | ----------------------- |
+| `APP_ENV`             | server                 | `local`                 |
+| `NEXT_PUBLIC_APP_URL` | client                 | `http://localhost:3000` |
+| `API_URL`             | server (BFF → FastAPI) | `http://127.0.0.1:8000` |
+
+**Rule:** never put `API_URL` or secrets in `NEXT_PUBLIC_*`.
+
+Production values go in the **Vercel dashboard**, not in git.
+
 ## Run dev server
 
-From repo root (recommended):
+From repo root:
 
 | Command                 | URL                    |
 | ----------------------- | ---------------------- |
 | `npm run dev:web`       | http://localhost:3000  |
 | `npm run dev:web:https` | https://localhost:3000 |
 | `npm run dev`           | API + web together     |
+| `npm run dev:https`     | API + web (HTTPS web)  |
 
 Or from `apps/web`:
 
 ```bash
 npm run dev
-npm run dev:https   # next dev --experimental-https (local self-signed cert)
+npm run dev:https   # next dev --experimental-https
 ```
-
-HTTPS is for local dev only (OAuth, secure cookies, etc.). Production HTTPS is handled by the host (e.g. Vercel).
 
 ## Quality
 
 ### From repo root
 
-| Command                | What it does                         |
-| ---------------------- | ------------------------------------ |
-| `npm run lint:web`     | ESLint                               |
-| `npm run lint:web:fix` | ESLint with `--fix`                  |
-| `npm run test:web`     | Vitest single run (hooks / CI)       |
-| `npm run check:web`    | ESLint + Vitest                      |
-| `npm run format`       | Prettier (whole monorepo)            |
-| `npm run check`        | Prettier + `check:web` + `check:api` |
+| Command                 | What it does                 |
+| ----------------------- | ---------------------------- |
+| `npm run lint:web`      | ESLint                       |
+| `npm run lint:web:fix`  | ESLint with `--fix`          |
+| `npm run typecheck:web` | `tsc --noEmit`               |
+| `npm run test:web`      | Vitest single run            |
+| `npm run check:web`     | ESLint + typecheck + Vitest  |
+| `npm run check`         | Prettier + `check:web` + API |
+| `npm run check:push`    | Full gate (pre-push hook)    |
 
 ### From `apps/web`
 
-| Command            | What it does        |
-| ------------------ | ------------------- |
-| `npm run lint`     | ESLint              |
-| `npm run lint:fix` | ESLint with `--fix` |
-| `npm run test`     | Vitest watch mode   |
-| `npm run test:run` | Vitest single run   |
-| `npm run check`    | lint + `test:run`   |
+| Command             | What it does                      |
+| ------------------- | --------------------------------- |
+| `npm run lint`      | ESLint                            |
+| `npm run typecheck` | `tsc --noEmit`                    |
+| `npm run test:run`  | Vitest single run                 |
+| `npm run check`     | lint + typecheck + test           |
+| `npm run build`     | Production build (needs env vars) |
 
 **Config files:**
 
-- ESLint: `eslint.config.mjs` (Next.js core-web-vitals, react-hooks, simple-import-sort, eslint-config-prettier)
-- Prettier: root `prettier.config.mjs` (includes `prettier-plugin-tailwindcss`)
+- ESLint: `eslint.config.mjs`
+- Vitest: `vitest.config.ts` (`resolve.tsconfigPaths: true`)
+- Prettier: root `prettier.config.mjs`
+
+### Production build (local smoke)
+
+```bash
+cd apps/web
+APP_ENV=production \
+NEXT_PUBLIC_APP_URL=http://localhost:3000 \
+API_URL=http://127.0.0.1:8000 \
+npm run build
+```
+
+## Git hooks & CI
+
+| When           | What runs for web                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| **pre-commit** | lint-staged (ESLint + Prettier on staged files) + `format:check`                            |
+| **pre-push**   | `check:web` (lint + typecheck + test) via `npm run check:push`                              |
+| **CI**         | Separate jobs: **Web lint**, **Web typecheck**, **Web test**; **Web build** after they pass |
+
+See [root README](../../README.md#ci-github-actions).
 
 ---
 
 ## Tests (Vitest)
 
-Config in `vitest.config.ts`; setup in `vitest.setup.ts` (`@testing-library/jest-dom`, cleanup after each test).
+Config in `vitest.config.ts`; setup in `vitest.setup.ts`.
 
-**Test file pattern:** `**/*.{test,spec}.{ts,tsx}` (e.g. `app/page.test.tsx`).
-
-### Commands
+**Pattern:** `**/*.{test,spec}.{ts,tsx}` (e.g. `app/page.test.tsx`).
 
 ```bash
-# from repo root
-npm run test:web
-
-# from apps/web
-npm run test        # watch
-npm run test:run    # single run (CI / pre-commit via npm run check)
+npm run test:web        # from root
+npm run test:run        # from apps/web (CI)
 ```
 
-### Example
-
-`app/page.test.tsx` renders the home page and mocks `next/image`:
-
-```tsx
-vi.mock("next/image", () => ({
-  default: (props: ImgHTMLAttributes<HTMLImageElement>) => (
-    <img {...props} alt={props.alt} />
-  ),
-}));
-
-render(<Home />);
-expect(
-  screen.getByRole("heading", { name: /to get started/i }),
-).toBeInTheDocument();
-```
-
-### Limits
-
-Vitest works for **Client Components**, sync code, hooks, and utilities.
-
-**Async Server Components** are not supported in unit tests — use E2E (Playwright, planned) for full page flows that depend on server rendering.
-
-**Analogy (API):** Vitest ≈ pytest, React Testing Library ≈ FastAPI TestClient for UI.
+**Limits:** Vitest suits Client Components and utilities. Async Server Components need E2E (planned).
 
 ---
 
@@ -122,10 +158,16 @@ Vitest works for **Client Components**, sync code, hooks, and utilities.
 apps/web/
 ├── app/
 │   ├── page.tsx
-│   ├── page.test.tsx       # colocated unit test
+│   ├── page.test.tsx
 │   ├── layout.tsx
+│   ├── health/route.ts     # GET /health — server env smoke test
 │   └── globals.css
-├── public/
+├── lib/env/
+│   ├── public.ts
+│   ├── server.ts
+│   └── required.ts
+├── .nvmrc
+├── .npmrc
 ├── eslint.config.mjs
 ├── vitest.config.ts
 ├── vitest.setup.ts
@@ -136,5 +178,5 @@ apps/web/
 
 ## Docs
 
-- Monorepo tooling, hooks, scripts: [../../README.md](../../README.md)
+- Monorepo tooling, hooks, CI: [../../README.md](../../README.md)
 - API: [../api/README.md](../api/README.md)

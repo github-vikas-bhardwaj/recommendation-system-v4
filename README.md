@@ -8,13 +8,16 @@ Monorepo for a **GenAI-based movie/show recommendation system**.
 recommendation-system-v4/
 ├── apps/
 │   ├── api/                    # Python API (FastAPI + Uvicorn)
-│   └── web/                    # Next.js frontend
-├── .husky/                     # Git hooks (pre-commit, commit-msg)
+│   └── web/                    # Next.js frontend (BFF)
+├── .github/workflows/          # GitHub Actions CI
+├── .husky/                     # Git hooks (pre-commit, pre-push, commit-msg)
+├── .nvmrc                      # Node 22.22.1 (monorepo tooling)
+├── .npmrc                      # engine-strict=true
 ├── .vscode/                    # Shared editor settings
 ├── commitlint.config.ts        # Conventional commit rules
 ├── prettier.config.mjs         # Prettier (root + web)
 ├── .prettierignore
-├── package.json                # Root tooling (Husky, lint-staged, commitlint, Prettier)
+├── package.json                # Root tooling (Husky, lint-staged, scripts)
 ├── tsconfig.json               # TypeScript config for commitlint
 ├── .gitignore
 └── README.md
@@ -22,21 +25,31 @@ recommendation-system-v4/
 
 ## Apps
 
-| App     | Stack                                                                                      | Docs                                     |
-| ------- | ------------------------------------------------------------------------------------------ | ---------------------------------------- |
-| **api** | Python 3.12, FastAPI, Uvicorn, uv, Pydantic, LangSmith, Ruff, Pyright, pytest              | [apps/api/README.md](apps/api/README.md) |
-| **web** | Next.js 16, React 19, Tailwind CSS 4, ESLint, Vitest, Testing Library, Prettier (via root) | [apps/web/README.md](apps/web/README.md) |
+| App     | Stack                                                                            | Docs                                     |
+| ------- | -------------------------------------------------------------------------------- | ---------------------------------------- |
+| **api** | Python 3.12, FastAPI, Uvicorn, uv, Pydantic, LangSmith, Ruff, Pyright, pytest    | [apps/api/README.md](apps/api/README.md) |
+| **web** | Next.js 16, React 19, Tailwind CSS 4, ESLint, `tsc`, Vitest, Prettier (via root) | [apps/web/README.md](apps/web/README.md) |
 
 ## Quick start
 
 ### First time (repo root)
 
+**Prerequisites:** Node **22.22.1** (`nvm use` / `fnm use`), [uv](https://docs.astral.sh/uv/) for Python **3.12.12**.
+
 ```bash
+nvm use                      # reads .nvmrc → 22.22.1
 npm install
 npm run prepare              # Husky hooks
 npm run sync:api             # Python deps (apps/api)
 cd apps/web && npm install   # Next.js deps
-cp apps/api/.env.example apps/api/.env   # fill in secrets
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
+```
+
+Verify runtimes:
+
+```bash
+npm run validate:runtime     # Node 22.22.1 + Python 3.12.12 via uv
 ```
 
 ### Run dev servers
@@ -49,11 +62,11 @@ cp apps/api/.env.example apps/api/.env   # fill in secrets
 | `npm run dev`           | API + web (HTTP)                  |
 | `npm run dev:https`     | API + web (HTTPS on web)          |
 
-| URL                          | Description             |
-| ---------------------------- | ----------------------- |
-| http://127.0.0.1:8000/health | API health check        |
-| http://127.0.0.1:8000/docs   | Swagger UI (local only) |
-| http://localhost:3000        | Next.js app             |
+| URL                          | Description                              |
+| ---------------------------- | ---------------------------------------- |
+| http://127.0.0.1:8000/health | API health check                         |
+| http://127.0.0.1:8000/docs   | Swagger UI (local only)                  |
+| http://localhost:3000/health | Web health route (server env smoke test) |
 
 ## Design principles
 
@@ -61,42 +74,51 @@ cp apps/api/.env.example apps/api/.env   # fill in secrets
 - **Explicit upgrade windows** — bump Python/deps intentionally, retest, refresh lockfile.
 - **Strict API contracts** — Pydantic request schemas with `extra="forbid"`.
 - **Environment-aware behavior** — local vs production via `ENV` and Pydantic Settings.
-- **Git discipline** — branch naming, conventional commits, pre-commit quality gate.
-- **Static typing** — Pyright for API (`npm run typecheck:api`).
+- **Git discipline** — branch naming, conventional commits, pre-commit + pre-push hooks.
+- **Static typing** — Pyright (API), `tsc` (web).
 - **Monorepo scripts at root** — `dev`, `check`, `format` mirror the API pattern.
 
 ## Tooling overview
 
-| Tool             | Role                                   | Scope             |
-| ---------------- | -------------------------------------- | ----------------- |
-| **uv**           | Python package manager, lockfile, venv | `apps/api`        |
-| **Ruff**         | Lint + format                          | `apps/api`        |
-| **Pyright**      | Static type checking                   | `apps/api`        |
-| **pytest**       | API tests                              | `apps/api`        |
-| **Vitest**       | Web unit tests                         | `apps/web`        |
-| **ESLint**       | Lint                                   | `apps/web`        |
-| **Prettier**     | Format                                 | root + `apps/web` |
-| **Husky**        | Git hooks                              | monorepo root     |
-| **lint-staged**  | Fix staged files on commit             | monorepo root     |
-| **commitlint**   | Enforce commit message format          | monorepo root     |
-| **concurrently** | Run API + web dev servers              | monorepo root     |
+| Tool               | Role                                    | Scope               |
+| ------------------ | --------------------------------------- | ------------------- |
+| **uv**             | Python package manager, lockfile, venv  | `apps/api`          |
+| **Ruff**           | Lint + format                           | `apps/api`          |
+| **Pyright**        | Static type checking                    | `apps/api`          |
+| **pytest**         | API tests                               | `apps/api`          |
+| **Vitest**         | Web unit tests                          | `apps/web`          |
+| **tsc**            | Web type checking                       | `apps/web`          |
+| **ESLint**         | Lint                                    | `apps/web`          |
+| **GitHub Actions** | CI (parallel jobs on PR / push to main) | `.github/workflows` |
+| **Prettier**       | Format                                  | root + `apps/web`   |
+| **Husky**          | Git hooks                               | monorepo root       |
+| **lint-staged**    | Fix staged files on commit              | monorepo root       |
+| **commitlint**     | Enforce commit message format           | monorepo root       |
+| **concurrently**   | Run API + web dev servers               | monorepo root       |
 
 ## Git hooks
 
-### Pre-commit (`.husky/pre-commit`)
+### Pre-commit (`.husky/pre-commit`) — fast
 
 Runs on every `git commit`:
 
-1. **Branch name validation** — blocks direct commits to `main`, `develop`, etc.
-2. **lint-staged** — auto-fix staged files (see below)
-3. **`npm run check`** — full-repo verify (read-only)
+1. **`validate:runtime`** — Node `22.22.1` + Python `3.12.12` (via uv)
+2. **Branch name validation** — blocks direct commits to `main`, `develop`, etc.
+3. **lint-staged** — auto-fix staged files (see below)
+4. **`npm run format:check`** — Prettier on whole repo
 
+### Pre-push (`.husky/pre-push`) — full gate
+
+Runs on every `git push`:
+
+```bash
+npm run check:push   # same as npm run check
+  ├── format:check
+  ├── check:web      # ESLint + tsc + Vitest
+  └── check:api      # Ruff + Pyright + pytest
 ```
-npm run check
-  ├── format:check     Prettier (root + web)
-  ├── check:web        ESLint + Vitest (apps/web)
-  └── check:api        Ruff + Pyright + pytest
-```
+
+Hooks are local-only (`git commit --no-verify` / `--no-verify` on push skips them). **CI is the remote safety net.**
 
 ### lint-staged (on commit)
 
@@ -113,10 +135,11 @@ git add apps/api/index.py
 npx lint-staged --dry-run
 ```
 
-Run the hook manually:
+Run hooks manually:
 
 ```bash
 sh .husky/pre-commit
+sh .husky/pre-push
 ```
 
 ### Commit message (`.husky/commit-msg`)
@@ -180,21 +203,24 @@ release/0.0.3
 
 ### Quality
 
-| Script                    | What it does                                    |
-| ------------------------- | ----------------------------------------------- |
-| `npm run format`          | Prettier write (root + web)                     |
-| `npm run format:check`    | Prettier check only                             |
-| `npm run lint:api`        | Ruff fix + format on all API files              |
-| `npm run lint:api:check`  | Ruff check + format check (API)                 |
-| `npm run typecheck:api`   | Pyright                                         |
-| `npm run test:api`        | pytest                                          |
-| `npm run test:web`        | Vitest (`apps/web`)                             |
-| `npm run check:api`       | `lint:api:check` + `typecheck:api` + `test:api` |
-| `npm run lint:web`        | ESLint (`apps/web`)                             |
-| `npm run lint:web:fix`    | ESLint with `--fix`                             |
-| `npm run check:web`       | ESLint + Vitest                                 |
-| `npm run check`           | `format:check` + `check:web` + `check:api`      |
-| `npm run validate:branch` | Branch name check only                          |
+| Script                     | What it does                                    |
+| -------------------------- | ----------------------------------------------- |
+| `npm run format`           | Prettier write (root + web)                     |
+| `npm run format:check`     | Prettier check only                             |
+| `npm run lint:api`         | Ruff fix + format on all API files              |
+| `npm run lint:api:check`   | Ruff check + format check (API)                 |
+| `npm run typecheck:api`    | Pyright                                         |
+| `npm run test:api`         | pytest                                          |
+| `npm run test:web`         | Vitest (`apps/web`)                             |
+| `npm run check:api`        | `lint:api:check` + `typecheck:api` + `test:api` |
+| `npm run lint:web`         | ESLint (`apps/web`)                             |
+| `npm run lint:web:fix`     | ESLint with `--fix`                             |
+| `npm run typecheck:web`    | `tsc --noEmit` (`apps/web`)                     |
+| `npm run check:web`        | ESLint + typecheck + Vitest                     |
+| `npm run check`            | `format:check` + `check:web` + `check:api`      |
+| `npm run check:push`       | Alias for `check` (pre-push hook)               |
+| `npm run validate:runtime` | Node + Python version check                     |
+| `npm run validate:branch`  | Branch name check only                          |
 
 ### Setup
 
@@ -202,15 +228,31 @@ release/0.0.3
 | ------------------ | ---------------------- |
 | `npm run sync:api` | `uv sync --dev` in API |
 
-## CI (planned)
+## CI (GitHub Actions)
 
-GitHub Actions will run the same gate as local hooks:
+Workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 
-```bash
-npm run check
-```
+Runs on **pull requests** and **pushes to `main`**. Seven quality jobs run **in parallel**; **Web build** runs after format + web checks pass.
 
-Hooks are local-only today (`git commit --no-verify` skips them). CI is the remote safety net.
+| Job               | Command                                                         |
+| ----------------- | --------------------------------------------------------------- |
+| **Format**        | `npm run format:check`                                          |
+| **Web lint**      | `npm run lint:web`                                              |
+| **Web typecheck** | `npm run typecheck:web`                                         |
+| **Web test**      | `npm run test:web`                                              |
+| **API lint**      | `npm run lint:api:check`                                        |
+| **API typecheck** | `npm run typecheck:api`                                         |
+| **API test**      | `npm run test:api`                                              |
+| **Web build**     | `next build` (needs: Format, Web lint, Web typecheck, Web test) |
+
+**Branch protection (recommended):** require all eight checks before merging to `main`.
+
+### Runtime versions in CI
+
+| Runtime        | Source                                           |
+| -------------- | ------------------------------------------------ |
+| Node 22.22.1   | `.nvmrc` / `apps/web/.nvmrc`                     |
+| Python 3.12.12 | `apps/api/.python-version` via `setup-uv@v8.3.0` |
 
 ## Git
 

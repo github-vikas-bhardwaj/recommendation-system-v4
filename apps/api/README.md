@@ -147,9 +147,9 @@ Entry point: `index:app` → `app` in `index.py`.
 |------|--------|------|
 | **Pydantic (requests)** | HTTP body shape / types | Per request (runtime) |
 | **Pydantic Settings** | Env vars (`ENV`, API keys) | App startup |
-| **Pyright** | Code types / logic errors | Dev + pre-commit (`npm run check`) + CI (planned) |
-| **Ruff** | Style, imports, common bugs | Dev + pre-commit |
-| **pytest** | API behavior | Dev + pre-commit |
+| **Pyright** | Code types / logic errors | Dev + pre-push + CI (`API typecheck` job) |
+| **Ruff** | Style, imports, common bugs | Dev + pre-commit (staged) + CI (`API lint` job) |
+| **pytest** | API behavior | Dev + pre-push + CI (`API test` job) |
 
 **Analogy (Next.js):** Pydantic ≈ Zod, Pyright ≈ `tsc`, Ruff ≈ ESLint + Prettier, pytest ≈ Vitest.
 
@@ -377,7 +377,7 @@ From repo root:
 npm run typecheck:api
 ```
 
-Pyright runs via `npm run typecheck:api` or as part of `npm run check` / `npm run check:api` (pre-commit and CI).
+Pyright runs via `npm run typecheck:api` or as part of `npm run check:api` (pre-push and CI).
 
 **Analogy (Next.js):** Pyright ≈ `tsc`.
 
@@ -417,7 +417,7 @@ Optional:
 
 ### Local (manual)
 
-Full monorepo check (recommended):
+Full monorepo check (same as pre-push):
 
 ```bash
 npm run check
@@ -429,43 +429,36 @@ API only:
 npm run check:api
 ```
 
-Web only (from root):
+Or individual steps:
 
 ```bash
-npm run check:web
+npm run lint:api:check
+npm run typecheck:api
+npm run test:api
 ```
 
-Runs, in order: `lint:api:check` → `typecheck:api` → `test:api`.
-
-Or from `apps/api`:
-
-```bash
-uv run ruff check .
-uv run ruff format --check .
-uv run pyright
-uv run pytest
-```
-
-### On git commit (automatic)
+### Git hooks
 
 ```
-pre-commit hook
+pre-commit (fast)
+  ├── validate:runtime   Node 22.22.1 + Python 3.12.12
   ├── validate branch name
-  ├── lint-staged (fix staged files)
-  └── npm run check
-        ├── format:check
-        ├── check:web (ESLint + Vitest)
-        └── check:api (Ruff + Pyright + pytest)
+  ├── lint-staged        Ruff on staged .py files
+  └── format:check
 
-commit-msg hook
-  └── commitlint (conventional commits)
+pre-push (full)
+  └── npm run check:push
+        ├── format:check
+        ├── check:web
+        └── check:api    ← Ruff + Pyright + pytest
+
+commit-msg
+  └── commitlint
 ```
 
-### Planned
+### CI (GitHub Actions)
 
-| Tool | Role |
-|------|------|
-| **GitHub Actions** | CI: `npm run check` |
+Parallel jobs: **API lint**, **API typecheck**, **API test** — see [root README](../../README.md#ci-github-actions).
 
 ---
 
