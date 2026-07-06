@@ -16,13 +16,34 @@ Next.js frontend for the recommendation system. Acts as the **public entry** and
 
 ## Runtime
 
-| File                            | Value                |
-| ------------------------------- | -------------------- |
-| `apps/web/.nvmrc`               | `22.22.1`            |
-| `package.json` → `engines.node` | `22.22.1`            |
-| `apps/web/.npmrc`               | `engine-strict=true` |
+Two layers — **strict locally**, **flexible on Vercel**:
 
-Use `nvm use` / `fnm use` in `apps/web` (or root `.nvmrc` for monorepo scripts).
+| File                            | Value                | Role                                                    |
+| ------------------------------- | -------------------- | ------------------------------------------------------- |
+| `apps/web/.nvmrc`               | `22.22.1`            | Local exact pin — `nvm use`, matches root `.nvmrc`      |
+| `package.json` → `engines.node` | `>=22.22.0`          | `npm ci` / Vercel — accepts host patch (e.g. `22.22.2`) |
+| `apps/web/.npmrc`               | `engine-strict=true` | Enforce `engines` on install                            |
+
+**Not in `engines`:** `npm` — Vercel bundles its own npm version; pinning it causes `EBADENGINE`.
+
+Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **exact** `22.22.1` via `validate:node`; Vercel only needs `>=22.22.0`.
+
+## Deploy (Vercel)
+
+1. Import repo → **Root Directory:** `apps/web`
+2. **Node.js Version:** `22.x` in project settings
+3. Add env vars before first deploy:
+
+| Variable              | First deploy            | After deploy                               |
+| --------------------- | ----------------------- | ------------------------------------------ |
+| `APP_ENV`             | `production`            | `production`                               |
+| `NEXT_PUBLIC_APP_URL` | placeholder OK          | **real** `https://….vercel.app` + redeploy |
+| `API_URL`             | `http://127.0.0.1:8000` | Render API URL when live                   |
+
+4. **Deploy** → verify `/` and `/health`
+5. Update `NEXT_PUBLIC_APP_URL` to production URL → **Redeploy** (`NEXT_PUBLIC_*` is baked at build time)
+
+**Common failure:** `EBADENGINE` — `engines` too strict or `npm` pinned in `package.json`. Use `>=22.22.0` and drop `engines.npm`.
 
 ## First-time setup
 

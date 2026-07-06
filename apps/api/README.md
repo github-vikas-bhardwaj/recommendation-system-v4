@@ -441,7 +441,7 @@ npm run test:api
 
 ```
 pre-commit (fast)
-  ├── validate:runtime   Node 22.22.1 + Python 3.12.12
+  ├── validate:runtime   Node 22.22.1 (exact, .nvmrc) + Python 3.12.12
   ├── validate branch name
   ├── lint-staged        Ruff on staged .py files
   └── format:check
