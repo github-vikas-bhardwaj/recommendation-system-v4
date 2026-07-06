@@ -30,7 +30,7 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v5.4.2
         with:
-          python-version-file: .python-version
+          working-directory: apps/api
 
       - name: Install root dependencies
         run: npm ci
