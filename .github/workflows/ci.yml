@@ -98,9 +98,8 @@ jobs:
 
       # Install uv + Python 3.12.12 from apps/api/.python-version + pyproject.toml
       - name: Setup uv
-        uses: astral-sh/setup-uv@v5.4.2
+        uses: astral-sh/setup-uv@v8
         with:
-          # Tell setup-uv where the Python project lives in the monorepo
           working-directory: apps/api
 
       - name: Install root dependencies
