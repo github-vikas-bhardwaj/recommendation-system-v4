@@ -16,13 +16,58 @@ Next.js frontend for the recommendation system. Acts as the **public entry** and
 
 ## Runtime
 
-| File                            | Value                |
-| ------------------------------- | -------------------- |
-| `apps/web/.nvmrc`               | `22.22.1`            |
-| `package.json` → `engines.node` | `22.22.1`            |
-| `apps/web/.npmrc`               | `engine-strict=true` |
+Two layers — **strict locally**, **flexible on Vercel**:
 
-Use `nvm use` / `fnm use` in `apps/web` (or root `.nvmrc` for monorepo scripts).
+| File                            | Value                | Role                                                    |
+| ------------------------------- | -------------------- | ------------------------------------------------------- |
+| `apps/web/.nvmrc`               | `22.22.1`            | Local exact pin — `nvm use`, matches root `.nvmrc`      |
+| `package.json` → `engines.node` | `>=22.22.0`          | `npm ci` / Vercel — accepts host patch (e.g. `22.22.2`) |
+| `apps/web/.npmrc`               | `engine-strict=true` | Enforce `engines` on install                            |
+
+**Not in `engines`:** `npm` — Vercel bundles its own npm version; pinning it causes `EBADENGINE`.
+
+Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **exact** `22.22.1` via `validate:node`; Vercel only needs `>=22.22.0`.
+
+## Deploy (Vercel)
+
+**Live:** https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app  
+**Health:** [/health](https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app/health) → `{"status":"ok","appEnv":"production","apiUrlConfigured":true}`
+
+### First-time setup
+
+1. Import repo → **Root Directory:** `apps/web`
+2. **Framework Preset:** **Next.js** (not Other — sitewide 404 if wrong)
+3. **Node.js Version:** `22.x` in project settings
+4. Add env vars, then deploy
+
+| Variable              | Production value                                                                |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `APP_ENV`             | `production`                                                                    |
+| `NEXT_PUBLIC_APP_URL` | `https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app` |
+| `API_URL`             | `https://recommendation-system-v4.onrender.com`                                 |
+
+5. Verify `/` and `/health`
+6. If you change `NEXT_PUBLIC_APP_URL`, **redeploy** (`NEXT_PUBLIC_*` is baked at build time)
+
+### Project settings
+
+| Setting          | Value           |
+| ---------------- | --------------- |
+| Root Directory   | `apps/web`      |
+| Framework Preset | Next.js         |
+| Build Command    | `npm run build` |
+| Install Command  | `npm ci`        |
+| Output Directory | default (blank) |
+
+**Common failures:**
+
+| Symptom                   | Fix                                                        |
+| ------------------------- | ---------------------------------------------------------- |
+| `EBADENGINE`              | `engines.node` = `>=22.22.0`, drop `engines.npm`           |
+| Sitewide `404: NOT_FOUND` | Framework = Next.js, Root Directory = `apps/web`, redeploy |
+| `apiUrlConfigured: false` | Set `API_URL` → redeploy                                   |
+
+See also [root README — Deployment](../../README.md#deployment).
 
 ## First-time setup
 

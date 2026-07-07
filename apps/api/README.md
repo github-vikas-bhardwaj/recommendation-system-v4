@@ -441,7 +441,7 @@ npm run test:api
 
 ```
 pre-commit (fast)
-  ├── validate:runtime   Node 22.22.1 + Python 3.12.12
+  ├── validate:runtime   Node 22.22.1 (exact, .nvmrc) + Python 3.12.12
   ├── validate branch name
   ├── lint-staged        Ruff on staged .py files
   └── format:check
@@ -459,6 +459,60 @@ commit-msg
 ### CI (GitHub Actions)
 
 Parallel jobs: **API lint**, **API typecheck**, **API test** — see [root README](../../README.md#ci-github-actions).
+
+---
+
+## Deploy (Render)
+
+**Live:** https://recommendation-system-v4.onrender.com  
+**Health:** [/health](https://recommendation-system-v4.onrender.com/health) → `{"detail":"Up and running"}`
+
+Push to `main` → Render auto-deploys when files under `apps/api` change.
+
+### Service settings
+
+| Setting | Value |
+| ------- | ----- |
+| **Root Directory** | `apps/api` |
+| **Runtime** | Python 3 |
+| **Branch** | `main` |
+| **Build Command** | `uv sync --frozen --no-dev` |
+| **Start Command** | `uv run uvicorn index:app --host 0.0.0.0 --port $PORT` |
+| **Instance Type** | Free |
+
+If `uv` is not found on first deploy:
+
+```bash
+pip install uv && uv sync --frozen --no-dev
+```
+
+Do **not** use `pip install -r requirements.txt` or `gunicorn your_application.wsgi` — this project uses **uv** + **Uvicorn**.
+
+### Environment variables (Render dashboard)
+
+| Variable | Value |
+| -------- | ----- |
+| `ENV` | `production` |
+| `LANGSMITH_API_KEY` | your key (optional until LLM features) |
+| `LANGSMITH_PROJECT` | `recommendation-system-v4` |
+
+`ENV=production` disables `/docs`, `/redoc`, and `/openapi.json` in production.
+
+### Wire to Vercel
+
+After API is live, set on **Vercel** (web project):
+
+| Variable | Value |
+| -------- | ----- |
+| `API_URL` | `https://recommendation-system-v4.onrender.com` |
+
+Redeploy web → `/health` should show `apiUrlConfigured: true`.
+
+### Free tier note
+
+Render free services **sleep after ~15 min idle**. First request after sleep can take 30–60 seconds (cold start).
+
+See also [root README — Deployment](../../README.md#deployment).
 
 ---
 

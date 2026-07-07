@@ -11,7 +11,7 @@ recommendation-system-v4/
 │   └── web/                    # Next.js frontend (BFF)
 ├── .github/workflows/          # GitHub Actions CI
 ├── .husky/                     # Git hooks (pre-commit, pre-push, commit-msg)
-├── .nvmrc                      # Node 22.22.1 (monorepo tooling)
+├── .nvmrc                      # Node 22.22.1 — local dev pin (see Node version strategy)
 ├── .npmrc                      # engine-strict=true
 ├── .vscode/                    # Shared editor settings
 ├── commitlint.config.ts        # Conventional commit rules
@@ -34,7 +34,7 @@ recommendation-system-v4/
 
 ### First time (repo root)
 
-**Prerequisites:** Node **22.22.1** (`nvm use` / `fnm use`), [uv](https://docs.astral.sh/uv/) for Python **3.12.12**.
+**Prerequisites:** Node **22.22.1** locally (`nvm use` — see [Node version strategy](#node-version-strategy)), [uv](https://docs.astral.sh/uv/) for Python **3.12.12**.
 
 ```bash
 nvm use                      # reads .nvmrc → 22.22.1
@@ -67,6 +67,32 @@ npm run validate:runtime     # Node 22.22.1 + Python 3.12.12 via uv
 | http://127.0.0.1:8000/health | API health check                         |
 | http://127.0.0.1:8000/docs   | Swagger UI (local only)                  |
 | http://localhost:3000/health | Web health route (server env smoke test) |
+
+## Node version strategy
+
+Node uses **two layers** — same idea as Python (`.python-version` + `requires-python`):
+
+| File / setting                               | Value                | Role                                                         |
+| -------------------------------------------- | -------------------- | ------------------------------------------------------------ |
+| `.nvmrc` (root + `apps/web`)                 | `22.22.1`            | **Local exact pin** — `nvm use`, `validate:node` on commit   |
+| `package.json` → `engines.node` (root + web) | `>=22.22.0`          | **Install / deploy floor** — `engine-strict` on `npm ci`     |
+| `.npmrc`                                     | `engine-strict=true` | Fail `npm install` / `npm ci` if Node below `engines`        |
+| Vercel dashboard                             | Node **22.x**        | Host picks patch (e.g. `22.22.2`) — must satisfy `>=22.22.0` |
+
+**Why not pin exact Node in `engines`?**
+
+Vercel only lets you select **major** Node (`22.x`) and may use a different **patch** than your laptop. Exact pins like `"node": "22.22.1"` or `"npm": "10.9.4"` cause `EBADENGINE` on deploy.
+
+**Do not pin `npm` in `engines`** — Vercel controls npm; only pin Node range.
+
+**Local vs deploy:**
+
+```
+Local:   .nvmrc 22.22.1  →  validate:node (strict on commit)
+Deploy:  engines >=22.22.0  →  Vercel 22.22.x passes npm ci
+```
+
+When bumping Node intentionally: update **both** `.nvmrc` files, then retest CI and Vercel.
 
 ## Design principles
 
@@ -102,7 +128,7 @@ npm run validate:runtime     # Node 22.22.1 + Python 3.12.12 via uv
 
 Runs on every `git commit`:
 
-1. **`validate:runtime`** — Node `22.22.1` + Python `3.12.12` (via uv)
+1. **`validate:runtime`** — Node **exact** `22.22.1` (from `.nvmrc`) + Python `3.12.12` (via uv)
 2. **Branch name validation** — blocks direct commits to `main`, `develop`, etc.
 3. **lint-staged** — auto-fix staged files (see below)
 4. **`npm run format:check`** — Prettier on whole repo
@@ -249,10 +275,98 @@ Runs on **pull requests** and **pushes to `main`**. Seven quality jobs run **in 
 
 ### Runtime versions in CI
 
-| Runtime        | Source                                           |
-| -------------- | ------------------------------------------------ |
-| Node 22.22.1   | `.nvmrc` / `apps/web/.nvmrc`                     |
-| Python 3.12.12 | `apps/api/.python-version` via `setup-uv@v8.3.0` |
+| Runtime          | Source                                           |
+| ---------------- | ------------------------------------------------ |
+| Node `22.22.1`   | `.nvmrc` via `node-version-file` in Actions      |
+| Python `3.12.12` | `apps/api/.python-version` via `setup-uv@v8.3.0` |
+
+CI pins **exact** Node locally in Actions; Vercel uses `engines` (`>=22.22.0`) instead — see [Node version strategy](#node-version-strategy).
+
+## Deployment
+
+Push to `main` → **Vercel** (web) and **Render** (API) auto-deploy. CI runs on PRs and `main` before merge.
+
+### Live URLs
+
+| App              | URL                                                                           | Health check                                                                                    |
+| ---------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Web** (Vercel) | https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app | [/health](https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app/health) |
+| **API** (Render) | https://recommendation-system-v4.onrender.com                                 | [/health](https://recommendation-system-v4.onrender.com/health)                                 |
+
+Expected web `/health` response:
+
+```json
+{ "status": "ok", "appEnv": "production", "apiUrlConfigured": true }
+```
+
+Expected API `/health` response:
+
+```json
+{ "detail": "Up and running" }
+```
+
+Vercel also assigns a **production domain** in project settings (e.g. `recommendation-system-v4.vercel.app`). Per-deployment preview URLs change; set `NEXT_PUBLIC_APP_URL` to the URL you want baked into the client bundle, then redeploy.
+
+### Architecture
+
+```
+GitHub (main)
+    ├── Vercel  → apps/web  → public UI + BFF
+    └── Render  → apps/api  → FastAPI (not exposed to browser directly)
+```
+
+Web calls API server-side via `API_URL` (BFF). Never put `API_URL` in `NEXT_PUBLIC_*`.
+
+### Vercel (web)
+
+| Setting              | Value                   |
+| -------------------- | ----------------------- |
+| **Root Directory**   | `apps/web`              |
+| **Framework Preset** | **Next.js** (not Other) |
+| **Node.js Version**  | `22.x`                  |
+| **Build Command**    | `npm run build`         |
+| **Install Command**  | `npm ci`                |
+| **Output Directory** | default (blank)         |
+
+**Environment variables** (Production + Preview):
+
+| Variable              | Production value                                                                |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `APP_ENV`             | `production`                                                                    |
+| `NEXT_PUBLIC_APP_URL` | `https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app` |
+| `API_URL`             | `https://recommendation-system-v4.onrender.com`                                 |
+
+Details: [apps/web/README.md](apps/web/README.md#deploy-vercel).
+
+### Render (API)
+
+| Setting            | Value                                                  |
+| ------------------ | ------------------------------------------------------ |
+| **Root Directory** | `apps/api`                                             |
+| **Runtime**        | Python 3                                               |
+| **Build Command**  | `uv sync --frozen --no-dev`                            |
+| **Start Command**  | `uv run uvicorn index:app --host 0.0.0.0 --port $PORT` |
+| **Instance Type**  | Free (sleeps after idle; cold start ~30–60s)           |
+
+**Environment variables:**
+
+| Variable            | Value                                  |
+| ------------------- | -------------------------------------- |
+| `ENV`               | `production`                           |
+| `LANGSMITH_API_KEY` | your key (optional until LLM features) |
+| `LANGSMITH_PROJECT` | `recommendation-system-v4`             |
+
+Details: [apps/api/README.md](apps/api/README.md#deploy-render).
+
+### Common deploy failures
+
+| Symptom                                   | Fix                                                               |
+| ----------------------------------------- | ----------------------------------------------------------------- |
+| Vercel sitewide `404: NOT_FOUND`          | Root Directory = `apps/web`, Framework = **Next.js**, redeploy    |
+| Vercel `EBADENGINE`                       | `engines.node` = `>=22.22.0`, no `engines.npm`                    |
+| Web `/health` → `apiUrlConfigured: false` | Set `API_URL` on Vercel → redeploy                                |
+| Render build fails                        | Root Directory = `apps/api`, use `uv sync` not `requirements.txt` |
+| Slow first API request                    | Render free tier cold start after sleep                           |
 
 ## Git
 
