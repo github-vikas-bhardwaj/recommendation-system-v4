@@ -1,22 +1,22 @@
 import { render, screen } from "@testing-library/react";
-import type { ImgHTMLAttributes } from "react";
-import { describe, expect, it, vi } from "vitest";
-
-vi.mock("next/image", () => ({
-  default: (props: ImgHTMLAttributes<HTMLImageElement>) => (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img {...props} alt={props.alt} />
-  ),
-}));
+import { describe, expect, it } from "vitest";
 
 import Home from "./page";
 
 describe("Home page", () => {
-  it("renders the getting started heading", () => {
+  it("renders the hero heading", () => {
     render(<Home />);
 
     expect(
-      screen.getByRole("heading", { name: /to get started/i }),
+      screen.getByRole("heading", { name: /discover what to watch/i }),
     ).toBeInTheDocument();
+  });
+
+  it("renders auth links in the hero", () => {
+    render(<Home />);
+
+    expect(
+      screen.getByRole("link", { name: /start for free/i }),
+    ).toHaveAttribute("href", "/signup");
   });
 });
