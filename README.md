@@ -258,7 +258,7 @@ release/0.0.3
 
 Workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 
-Runs on **pull requests** and **pushes to `main`**. Seven quality jobs run **in parallel**; **Web build** runs after format + web checks pass.
+Runs on **pull requests** and **pushes to `main`**. Quality jobs run **in parallel**; **Web build** runs after format + web checks pass; **CI complete** runs last and gates Vercel deploys.
 
 | Job               | Command                                                         |
 | ----------------- | --------------------------------------------------------------- |
@@ -270,8 +270,9 @@ Runs on **pull requests** and **pushes to `main`**. Seven quality jobs run **in 
 | **API typecheck** | `npm run typecheck:api`                                         |
 | **API test**      | `npm run test:api`                                              |
 | **Web build**     | `next build` (needs: Format, Web lint, Web typecheck, Web test) |
+| **CI complete**   | Fails if any job above failed — **Vercel Deployment Check**     |
 
-**Branch protection (recommended):** require all eight checks before merging to `main`.
+**Branch protection (recommended):** require **CI complete** before merging to `main`.
 
 ### Runtime versions in CI
 
@@ -340,6 +341,18 @@ Web calls API server-side via `API_URL` (BFF). Never put `API_URL` in `NEXT_PUBL
 | `DB_PASSWORD`                   | Supabase → Project Settings → Database → password   |
 
 Apply to **Production** and **Preview**, then **redeploy** (`NEXT_PUBLIC_*` is baked at build time).
+
+**Wait for CI before promoting deploys** (Vercel builds on push immediately; use Deployment Checks so production/preview only go live after GitHub CI passes):
+
+1. Push the `CI complete` job (see `.github/workflows/ci.yml`) — check name on GitHub: **`CI complete`**
+2. Vercel → Project → **Settings → Git → Deployment Checks**
+3. Enable checks for **Production** (and **Preview** if desired)
+4. Add required check: **`CI complete`** (or `CI / CI complete` if the picker shows the workflow prefix)
+5. Save — Vercel will build on push but **hold promotion** until that check is green
+
+Optional (recommended): GitHub → **Settings → Branches** → `main` → require status check **`CI complete`** before merge.
+
+Docs: [Vercel Deployment Checks](https://vercel.com/docs/deployments/deployment-checks)
 
 Details: [apps/web/README.md](apps/web/README.md#deploy-vercel).
 

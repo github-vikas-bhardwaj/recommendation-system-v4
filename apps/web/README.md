@@ -71,6 +71,8 @@ Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **e
 | `apiUrlConfigured: false`               | Set `API_URL` → redeploy                                     |
 | Build `Missing environment variable: …` | Add full [env table](#first-time-setup) on Vercel → redeploy |
 
+**Vercel deploys before CI finishes:** enable [Deployment Checks](https://vercel.com/docs/deployments/deployment-checks) and require GitHub check **`CI complete`**. See [root README — Vercel](../../README.md#vercel-web).
+
 See also [root README — Deployment](../../README.md#deployment).
 
 ## First-time setup

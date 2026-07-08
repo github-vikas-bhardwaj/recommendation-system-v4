@@ -147,3 +147,32 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder-anon-key
           DB_PASSWORD: ci-build-placeholder
         run: npm run build
+
+  ci-complete:
+    name: CI complete
+    needs:
+      - format
+      - web-lint
+      - web-typecheck
+      - web-test
+      - web-build
+      - api-lint
+      - api-typecheck
+      - api-test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Verify all CI jobs passed
+        run: |
+          if [ "${{ needs.format.result }}" != "success" ] || \
+             [ "${{ needs.web-lint.result }}" != "success" ] || \
+             [ "${{ needs.web-typecheck.result }}" != "success" ] || \
+             [ "${{ needs.web-test.result }}" != "success" ] || \
+             [ "${{ needs.web-build.result }}" != "success" ] || \
+             [ "${{ needs.api-lint.result }}" != "success" ] || \
+             [ "${{ needs.api-typecheck.result }}" != "success" ] || \
+             [ "${{ needs.api-test.result }}" != "success" ]; then
+            echo "One or more CI jobs did not succeed."
+            exit 1
+          fi
+          echo "All CI checks passed."
