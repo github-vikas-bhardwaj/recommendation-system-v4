@@ -8,9 +8,10 @@ import { WatchedToggle } from "./WatchedToggle";
 
 type ShowCardProps = {
   show: Show;
+  initialWatched: boolean;
 };
 
-export function ShowCard({ show }: ShowCardProps) {
+export function ShowCard({ show, initialWatched }: ShowCardProps) {
   const summary = stripHtml(show.summary);
   const detailHref = `/shows/${show.id}`;
 
@@ -53,7 +54,11 @@ export function ShowCard({ show }: ShowCardProps) {
 
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-white/5 pt-3">
           <span className="text-xs text-zinc-500">{show.status}</span>
-          <WatchedToggle showId={show.id} showName={show.name} />
+          <WatchedToggle
+            showId={show.id}
+            showName={show.name}
+            initialWatched={initialWatched}
+          />
         </div>
       </div>
     </article>
