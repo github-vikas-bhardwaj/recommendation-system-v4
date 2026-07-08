@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { getPaginationRange } from "@/lib/shows/pagination";
+
 type ShowsPaginationProps = {
   currentPage: number;
   totalPages: number;
@@ -21,7 +23,7 @@ export function ShowsPagination({
 }: ShowsPaginationProps) {
   if (totalPages <= 1) return null;
 
-  const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+  const pages = getPaginationRange(currentPage, totalPages);
 
   return (
     <nav
@@ -40,20 +42,30 @@ export function ShowsPagination({
         Previous
       </Link>
 
-      {pages.map((page) => (
-        <Link
-          key={page}
-          href={buildHref(page, query)}
-          aria-current={page === currentPage ? "page" : undefined}
-          className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition ${
-            page === currentPage
-              ? "bg-violet-600 text-white shadow-lg shadow-violet-900/40"
-              : "text-zinc-400 hover:bg-white/5 hover:text-white"
-          }`}
-        >
-          {page}
-        </Link>
-      ))}
+      {pages.map((page, index) =>
+        page === "ellipsis" ? (
+          <span
+            key={`ellipsis-${index}`}
+            aria-hidden
+            className="flex h-10 w-10 items-center justify-center text-sm text-zinc-500"
+          >
+            …
+          </span>
+        ) : (
+          <Link
+            key={page}
+            href={buildHref(page, query)}
+            aria-current={page === currentPage ? "page" : undefined}
+            className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition ${
+              page === currentPage
+                ? "bg-violet-600 text-white shadow-lg shadow-violet-900/40"
+                : "text-zinc-400 hover:bg-white/5 hover:text-white"
+            }`}
+          >
+            {page}
+          </Link>
+        ),
+      )}
 
       <Link
         href={buildHref(Math.min(totalPages, currentPage + 1), query)}

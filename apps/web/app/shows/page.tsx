@@ -4,8 +4,7 @@ import { ShowCardGrid } from "@/app/components/shows/ShowCardGrid";
 import { ShowsPageShell } from "@/app/components/shows/ShowsPageShell";
 import { ShowsPagination } from "@/app/components/shows/ShowsPagination";
 import { ShowsSearchBar } from "@/app/components/shows/ShowsSearchBar";
-import { searchShows } from "@/lib/shows/mock-shows";
-import { paginateShows } from "@/lib/shows/pagination";
+import { listShows } from "@/lib/shows/queries";
 import { SHOWS_PAGE_SIZE } from "@/lib/shows/types";
 
 export const metadata: Metadata = {
@@ -24,11 +23,10 @@ export default async function ShowsPage({ searchParams }: ShowsPageProps) {
   const params = await searchParams;
   const query = params.q?.trim() ?? "";
   const page = Number(params.page ?? "1");
-  const filtered = searchShows(query);
-  const { items, currentPage, totalPages, total } = paginateShows(
-    filtered,
-    Number.isFinite(page) ? page : 1,
-  );
+  const { items, currentPage, totalPages, total } = await listShows({
+    query,
+    page: Number.isFinite(page) ? page : 1,
+  });
 
   const start = total === 0 ? 0 : (currentPage - 1) * SHOWS_PAGE_SIZE + 1;
   const end = Math.min(currentPage * SHOWS_PAGE_SIZE, total);

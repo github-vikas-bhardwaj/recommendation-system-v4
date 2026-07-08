@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 
-import { stripHtml } from "@/lib/shows/mock-shows";
+import { stripHtml } from "@/lib/shows/format";
 import type { Show } from "@/lib/shows/types";
 
+import { ShowPoster } from "./ShowPoster";
 import { WatchedToggle } from "./WatchedToggle";
 
 type ShowCardProps = {
@@ -17,10 +17,9 @@ export function ShowCard({ show }: ShowCardProps) {
   return (
     <article className="card-surface group flex flex-col overflow-hidden rounded-2xl transition hover:border-violet-400/25 hover:bg-white/[0.06]">
       <div className="relative aspect-2/3 overflow-hidden bg-zinc-900">
-        <Image
+        <ShowPoster
           src={show.image.original}
           alt={show.name}
-          fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover transition duration-500 group-hover:scale-105"
         />

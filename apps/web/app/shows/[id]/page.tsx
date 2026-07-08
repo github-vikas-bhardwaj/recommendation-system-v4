@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 
 import { ShowDetailHero } from "@/app/components/shows/ShowDetailHero";
 import { ShowsPageShell } from "@/app/components/shows/ShowsPageShell";
-import { getShowById } from "@/lib/shows/mock-shows";
+import { stripHtml } from "@/lib/shows/format";
+import { getShowById } from "@/lib/shows/queries";
 
 type ShowDetailPageProps = {
   params: Promise<{
@@ -15,7 +16,7 @@ export async function generateMetadata({
   params,
 }: ShowDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  const show = getShowById(Number(id));
+  const show = await getShowById(Number(id));
 
   if (!show) {
     return { title: "Show not found — ReelMind" };
@@ -23,13 +24,13 @@ export async function generateMetadata({
 
   return {
     title: `${show.name} — ReelMind`,
-    description: show.summary.replace(/<[^>]+>/g, "").slice(0, 160),
+    description: stripHtml(show.summary).slice(0, 160),
   };
 }
 
 export default async function ShowDetailPage({ params }: ShowDetailPageProps) {
   const { id } = await params;
-  const show = getShowById(Number(id));
+  const show = await getShowById(Number(id));
 
   if (!show) {
     notFound();

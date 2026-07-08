@@ -1,3 +1,4 @@
+import { stripHtml } from "./format";
 import type { Show } from "./types";
 
 const summaries = [
@@ -130,8 +131,4 @@ export function searchShows(query: string): Show[] {
       stripHtml(show.summary).toLowerCase().includes(normalized) ||
       show.genres.some((genre) => genre.toLowerCase().includes(normalized)),
   );
-}
-
-export function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, "").trim();
 }

@@ -9,7 +9,7 @@ export type Show = {
   ended: string | null;
   weight: number;
   image: {
-    original: string;
+    original: string | null;
   };
   summary: string;
 };
