@@ -143,4 +143,7 @@ jobs:
           APP_ENV: production
           NEXT_PUBLIC_APP_URL: http://localhost:3000
           API_URL: http://127.0.0.1:8000
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder-anon-key
+          DB_PASSWORD: ci-build-placeholder
         run: npm run build
