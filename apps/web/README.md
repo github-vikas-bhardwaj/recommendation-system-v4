@@ -38,16 +38,19 @@ Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **e
 1. Import repo → **Root Directory:** `apps/web`
 2. **Framework Preset:** **Next.js** (not Other — sitewide 404 if wrong)
 3. **Node.js Version:** `22.x` in project settings
-4. Add env vars, then deploy
+4. Add env vars (**Production** + **Preview**), then deploy
 
-| Variable              | Production value                                                                |
-| --------------------- | ------------------------------------------------------------------------------- |
-| `APP_ENV`             | `production`                                                                    |
-| `NEXT_PUBLIC_APP_URL` | `https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app` |
-| `API_URL`             | `https://recommendation-system-v4.onrender.com`                                 |
+| Variable                        | Production example                                                              |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| `APP_ENV`                       | `production`                                                                    |
+| `NEXT_PUBLIC_APP_URL`           | `https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app` |
+| `API_URL`                       | `https://recommendation-system-v4.onrender.com`                                 |
+| `NEXT_PUBLIC_SUPABASE_URL`      | `https://<project-ref>.supabase.co`                                             |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | from Supabase → Settings → API                                                  |
+| `DB_PASSWORD`                   | from Supabase → Settings → Database                                             |
 
 5. Verify `/` and `/health`
-6. If you change `NEXT_PUBLIC_APP_URL`, **redeploy** (`NEXT_PUBLIC_*` is baked at build time)
+6. If you change any `NEXT_PUBLIC_*` var, **redeploy** (baked at build time)
 
 ### Project settings
 
@@ -61,11 +64,12 @@ Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **e
 
 **Common failures:**
 
-| Symptom                   | Fix                                                        |
-| ------------------------- | ---------------------------------------------------------- |
-| `EBADENGINE`              | `engines.node` = `>=22.22.0`, drop `engines.npm`           |
-| Sitewide `404: NOT_FOUND` | Framework = Next.js, Root Directory = `apps/web`, redeploy |
-| `apiUrlConfigured: false` | Set `API_URL` → redeploy                                   |
+| Symptom                                 | Fix                                                          |
+| --------------------------------------- | ------------------------------------------------------------ |
+| `EBADENGINE`                            | `engines.node` = `>=22.22.0`, drop `engines.npm`             |
+| Sitewide `404: NOT_FOUND`               | Framework = Next.js, Root Directory = `apps/web`, redeploy   |
+| `apiUrlConfigured: false`               | Set `API_URL` → redeploy                                     |
+| Build `Missing environment variable: …` | Add full [env table](#first-time-setup) on Vercel → redeploy |
 
 See also [root README — Deployment](../../README.md#deployment).
 
@@ -102,11 +106,14 @@ lib/env/
 └── required.ts  # shared helper
 ```
 
-| Variable              | Scope                  | Local example           |
-| --------------------- | ---------------------- | ----------------------- |
-| `APP_ENV`             | server                 | `local`                 |
-| `NEXT_PUBLIC_APP_URL` | client                 | `http://localhost:3000` |
-| `API_URL`             | server (BFF → FastAPI) | `http://127.0.0.1:8000` |
+| Variable                        | Scope                  | Local example              |
+| ------------------------------- | ---------------------- | -------------------------- |
+| `APP_ENV`                       | server                 | `local`                    |
+| `NEXT_PUBLIC_APP_URL`           | client                 | `http://localhost:3000`    |
+| `API_URL`                       | server (BFF → FastAPI) | `http://127.0.0.1:8000`    |
+| `NEXT_PUBLIC_SUPABASE_URL`      | client                 | Supabase project URL       |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client                 | Supabase anon key          |
+| `DB_PASSWORD`                   | server                 | Supabase database password |
 
 **Rule:** never put `API_URL` or secrets in `NEXT_PUBLIC_*`.
 

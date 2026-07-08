@@ -328,13 +328,18 @@ Web calls API server-side via `API_URL` (BFF). Never put `API_URL` in `NEXT_PUBL
 | **Install Command**  | `npm ci`                |
 | **Output Directory** | default (blank)         |
 
-**Environment variables** (Production + Preview):
+**Environment variables** (Production + Preview — all required for `next build`):
 
-| Variable              | Production value                                                                |
-| --------------------- | ------------------------------------------------------------------------------- |
-| `APP_ENV`             | `production`                                                                    |
-| `NEXT_PUBLIC_APP_URL` | `https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app` |
-| `API_URL`             | `https://recommendation-system-v4.onrender.com`                                 |
+| Variable                        | Where to get it                                     |
+| ------------------------------- | --------------------------------------------------- |
+| `APP_ENV`                       | `production`                                        |
+| `NEXT_PUBLIC_APP_URL`           | Your Vercel production URL                          |
+| `API_URL`                       | Your Render API URL                                 |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Supabase → Project Settings → API → Project URL     |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API → anon/public key |
+| `DB_PASSWORD`                   | Supabase → Project Settings → Database → password   |
+
+Apply to **Production** and **Preview**, then **redeploy** (`NEXT_PUBLIC_*` is baked at build time).
 
 Details: [apps/web/README.md](apps/web/README.md#deploy-vercel).
 
@@ -360,13 +365,13 @@ Details: [apps/api/README.md](apps/api/README.md#deploy-render).
 
 ### Common deploy failures
 
-| Symptom                                   | Fix                                                               |
-| ----------------------------------------- | ----------------------------------------------------------------- |
-| Vercel sitewide `404: NOT_FOUND`          | Root Directory = `apps/web`, Framework = **Next.js**, redeploy    |
-| Vercel `EBADENGINE`                       | `engines.node` = `>=22.22.0`, no `engines.npm`                    |
-| Web `/health` → `apiUrlConfigured: false` | Set `API_URL` on Vercel → redeploy                                |
-| Render build fails                        | Root Directory = `apps/api`, use `uv sync` not `requirements.txt` |
-| Slow first API request                    | Render free tier cold start after sleep                           |
+| Symptom                                                               | Fix                                                               |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Vercel sitewide `404: NOT_FOUND`                                      | Root Directory = `apps/web`, Framework = **Next.js**, redeploy    |
+| Vercel `EBADENGINE`                                                   | `engines.node` = `>=22.22.0`, no `engines.npm`                    |
+| Vercel build `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` | Add all vars in [Vercel env table](#vercel-web) → redeploy        |
+| Render build fails                                                    | Root Directory = `apps/api`, use `uv sync` not `requirements.txt` |
+| Slow first API request                                                | Render free tier cold start after sleep                           |
 
 ## Git
 
