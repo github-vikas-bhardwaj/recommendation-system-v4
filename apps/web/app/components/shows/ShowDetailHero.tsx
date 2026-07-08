@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 
-import { stripHtml } from "@/lib/shows/mock-shows";
+import { stripHtml } from "@/lib/shows/format";
 import type { Show } from "@/lib/shows/types";
 
+import { ShowPoster } from "./ShowPoster";
 import { WatchedToggle } from "./WatchedToggle";
 
 type ShowDetailHeroProps = {
@@ -16,10 +16,9 @@ export function ShowDetailHero({ show }: ShowDetailHeroProps) {
   return (
     <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-950">
       <div className="absolute inset-0">
-        <Image
+        <ShowPoster
           src={show.image.original}
           alt=""
-          fill
           priority
           sizes="100vw"
           className="object-cover opacity-30 blur-sm"
@@ -30,10 +29,9 @@ export function ShowDetailHero({ show }: ShowDetailHeroProps) {
 
       <div className="relative grid gap-8 p-6 sm:p-10 lg:grid-cols-[220px_1fr]">
         <div className="relative mx-auto aspect-2/3 w-full max-w-[220px] overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/50">
-          <Image
+          <ShowPoster
             src={show.image.original}
             alt={show.name}
-            fill
             priority
             sizes="220px"
             className="object-cover"
