@@ -21,6 +21,14 @@ const eslintConfig = defineConfig([
     rules: {
       // Disallow console.log/debug/info; allow warn/error for real issues
       "no-console": ["error", { allow: ["warn", "error"] }],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
     },
   },
   {

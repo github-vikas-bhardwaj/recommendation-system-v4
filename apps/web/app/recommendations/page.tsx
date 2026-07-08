@@ -12,7 +12,6 @@ export const metadata: Metadata = {
 
 export default function RecommendationsPage() {
   const recommendations = getMockRecommendations();
-
   return (
     <RecommendationsPageShell>
       <div className="mx-auto max-w-5xl space-y-8">

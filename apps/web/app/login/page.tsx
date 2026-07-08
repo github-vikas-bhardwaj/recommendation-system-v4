@@ -10,7 +10,12 @@ export const metadata: Metadata = {
   description: "Log in to your ReelMind account.",
 };
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{ next?: string }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const { next } = await searchParams;
   return (
     <AuthPageShell>
       <AuthCard>
@@ -18,7 +23,7 @@ export default function LoginPage() {
           title="Welcome back"
           description="Log in to pick up your recommendations where you left off."
         />
-        <LoginForm />
+        <LoginForm next={next} />
       </AuthCard>
     </AuthPageShell>
   );

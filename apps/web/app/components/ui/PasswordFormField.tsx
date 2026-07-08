@@ -1,14 +1,19 @@
-import type { InputHTMLAttributes, ReactNode } from "react";
+"use client";
 
-type FormFieldProps = {
+import type { InputHTMLAttributes, ReactNode } from "react";
+import { useState } from "react";
+
+import { EyeIcon, EyeOffIcon } from "./PasswordVisibilityIcons";
+
+type PasswordFormFieldProps = {
   label: string;
   id: string;
   hint?: ReactNode;
   error?: string;
   required?: boolean;
-} & InputHTMLAttributes<HTMLInputElement>;
+} & Omit<InputHTMLAttributes<HTMLInputElement>, "type">;
 
-export function FormField({
+export function PasswordFormField({
   label,
   id,
   hint,
@@ -17,7 +22,9 @@ export function FormField({
   className = "",
   "aria-describedby": ariaDescribedBy,
   ...props
-}: FormFieldProps) {
+}: PasswordFormFieldProps) {
+  const [visible, setVisible] = useState(false);
+
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy =
@@ -38,14 +45,25 @@ export function FormField({
           </span>
         ) : null}
       </label>
-      <input
-        id={id}
-        required={required}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        className={`w-full rounded-xl border bg-white/5 px-4 py-3 text-sm text-white transition placeholder:text-zinc-500 focus:ring-2 focus:outline-none ${inputStyles} ${className}`}
-        {...props}
-      />
+      <div className="relative">
+        <input
+          id={id}
+          type={visible ? "text" : "password"}
+          required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          className={`w-full rounded-xl border bg-white/5 py-3 pr-11 pl-4 text-sm text-white transition placeholder:text-zinc-500 focus:ring-2 focus:outline-none ${inputStyles} ${className}`}
+          {...props}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((current) => !current)}
+          aria-label={visible ? "Hide password" : "Show password"}
+          className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-zinc-400 transition hover:text-white"
+        >
+          {visible ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      </div>
       {error ? (
         <p id={errorId} className="text-xs text-red-400">
           {error}

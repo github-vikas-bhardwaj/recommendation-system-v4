@@ -9,6 +9,7 @@ export const serverEnv = {
   ...publicEnv,
   appEnv,
   apiUrl: required("API_URL"),
+  dbPassword: required("DB_PASSWORD"),
   isLocal: appEnv === "local",
   isProduction: appEnv === "production",
 } as const;
