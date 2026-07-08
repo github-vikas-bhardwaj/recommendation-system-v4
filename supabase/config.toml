@@ -1,0 +1,14 @@
+# Supabase local CLI config. Remote schema is applied via GitHub integration
+# (Dashboard → Database → GitHub) from supabase/migrations/ on merge.
+
+project_id = "recommendation-system-v4"
+
+[api]
+enabled = true
+
+[db]
+port = 54322
+major_version = 15
+
+[db.migrations]
+enabled = true

@@ -373,9 +373,26 @@ Details: [apps/api/README.md](apps/api/README.md#deploy-render).
 | Render build fails                                                    | Root Directory = `apps/api`, use `uv sync` not `requirements.txt` |
 | Slow first API request                                                | Render free tier cold start after sleep                           |
 
+### Supabase (database)
+
+Schema lives in [`supabase/migrations/`](supabase/migrations/). GitHub integration should use **Working directory** `.` (repo root).
+
+1. Commit and push migrations to `main`
+2. Supabase Dashboard → **Database → GitHub** → enable **Deploy to production** and set production branch to `main` (currently off in project settings)
+3. After merge, verify tables in **Table Editor** (`shows`, `shows_embeddings`)
+
+**RLS (this migration):**
+
+| Table              | Access                                                                      |
+| ------------------ | --------------------------------------------------------------------------- |
+| `shows`            | `SELECT` for `authenticated` only; writes via **service role** (admin seed) |
+| `shows_embeddings` | No client policies — **service role** only (FastAPI / batch jobs)           |
+
+**Local CLI (optional):** copy `DATABASE_URL` from Supabase → Settings → Database into `.env`, then `npx supabase db push`. Not required if GitHub integration deploys migrations.
+
 ## Git
 
-**Commit:** source, `pyproject.toml`, `uv.lock`, root `package.json` + `package-lock.json`, `apps/web/package.json` + `package-lock.json`, `.env.example`, `.vscode/`, `.husky/`, `commitlint.config.ts`, `prettier.config.mjs`, `.prettierignore`, `apps/web/vitest.config.ts`, `apps/web/vitest.setup.ts`
+**Commit:** source, `pyproject.toml`, `uv.lock`, root `package.json` + `package-lock.json`, `apps/web/package.json` + `package-lock.json`, `.env.example`, `supabase/`, `.vscode/`, `.husky/`, `commitlint.config.ts`, `prettier.config.mjs`, `.prettierignore`, `apps/web/vitest.config.ts`, `apps/web/vitest.setup.ts`
 
 **Do not commit:** `.env`, `.venv/`, `node_modules/`, `__pycache__/`, `.ruff_cache/`, `.pytest_cache/`, `.next/`, `apps/web/.next/`
 
