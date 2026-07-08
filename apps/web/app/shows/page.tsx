@@ -6,6 +6,7 @@ import { ShowsPagination } from "@/app/components/shows/ShowsPagination";
 import { ShowsSearchBar } from "@/app/components/shows/ShowsSearchBar";
 import { listShows } from "@/lib/shows/queries";
 import { SHOWS_PAGE_SIZE } from "@/lib/shows/types";
+import { getWatchedShowIds } from "@/lib/watched/queries";
 
 export const metadata: Metadata = {
   title: "Shows — ReelMind",
@@ -23,10 +24,14 @@ export default async function ShowsPage({ searchParams }: ShowsPageProps) {
   const params = await searchParams;
   const query = params.q?.trim() ?? "";
   const page = Number(params.page ?? "1");
-  const { items, currentPage, totalPages, total } = await listShows({
-    query,
-    page: Number.isFinite(page) ? page : 1,
-  });
+  const [{ items, currentPage, totalPages, total }, watchedShowIds] =
+    await Promise.all([
+      listShows({
+        query,
+        page: Number.isFinite(page) ? page : 1,
+      }),
+      getWatchedShowIds(),
+    ]);
 
   const start = total === 0 ? 0 : (currentPage - 1) * SHOWS_PAGE_SIZE + 1;
   const end = Math.min(currentPage * SHOWS_PAGE_SIZE, total);
@@ -67,7 +72,7 @@ export default async function ShowsPage({ searchParams }: ShowsPageProps) {
           </p>
         </div>
 
-        <ShowCardGrid shows={items} />
+        <ShowCardGrid shows={items} watchedShowIds={watchedShowIds} />
         <ShowsPagination
           currentPage={currentPage}
           totalPages={totalPages}

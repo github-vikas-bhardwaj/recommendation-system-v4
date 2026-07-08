@@ -4,9 +4,10 @@ import { ShowCard } from "./ShowCard";
 
 type ShowCardGridProps = {
   shows: Show[];
+  watchedShowIds: ReadonlySet<number>;
 };
 
-export function ShowCardGrid({ shows }: ShowCardGridProps) {
+export function ShowCardGrid({ shows, watchedShowIds }: ShowCardGridProps) {
   if (shows.length === 0) {
     return (
       <div className="card-surface rounded-2xl px-6 py-16 text-center">
@@ -21,7 +22,11 @@ export function ShowCardGrid({ shows }: ShowCardGridProps) {
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {shows.map((show) => (
-        <ShowCard key={show.id} show={show} />
+        <ShowCard
+          key={show.id}
+          show={show}
+          initialWatched={watchedShowIds.has(show.id)}
+        />
       ))}
     </div>
   );

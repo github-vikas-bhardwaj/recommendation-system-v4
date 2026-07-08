@@ -4,23 +4,9 @@ import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/db/supabase/server";
 
-import { getShowImageSrc, toDateString } from "./format";
+import { mapShowRow, type ShowRow } from "./map-row";
 import type { Show } from "./types";
 import { SHOWS_PAGE_SIZE } from "./types";
-
-type ShowRow = {
-  id: number;
-  name: string;
-  type: string;
-  language: string;
-  genres: string[] | null;
-  status: string;
-  premiered: string | null;
-  ended: string | null;
-  weight: number;
-  image: string | null;
-  summary: string;
-};
 
 export type ListShowsResult = {
   items: Show[];
@@ -34,22 +20,6 @@ export class ShowsQueryError extends Error {
     super(message);
     this.name = "ShowsQueryError";
   }
-}
-
-function mapShowRow(row: ShowRow): Show {
-  return {
-    id: row.id,
-    name: row.name,
-    type: row.type,
-    language: row.language,
-    genres: row.genres ?? [],
-    status: row.status,
-    premiered: toDateString(row.premiered) ?? "",
-    ended: toDateString(row.ended),
-    weight: row.weight,
-    image: { original: getShowImageSrc(row.image) },
-    summary: row.summary,
-  };
 }
 
 function escapeIlike(value: string): string {

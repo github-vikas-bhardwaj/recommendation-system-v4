@@ -37,6 +37,10 @@ vi.mock("@/lib/shows/queries", () => ({
   })),
 }));
 
+vi.mock("@/lib/watched/queries", () => ({
+  getWatchedShowIds: vi.fn(async () => new Set<number>()),
+}));
+
 import ShowsPage from "./page";
 
 describe("Shows page", () => {

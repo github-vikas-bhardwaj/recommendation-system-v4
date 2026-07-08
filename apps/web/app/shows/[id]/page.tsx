@@ -5,6 +5,7 @@ import { ShowDetailHero } from "@/app/components/shows/ShowDetailHero";
 import { ShowsPageShell } from "@/app/components/shows/ShowsPageShell";
 import { stripHtml } from "@/lib/shows/format";
 import { getShowById } from "@/lib/shows/queries";
+import { isShowWatched } from "@/lib/watched/queries";
 
 type ShowDetailPageProps = {
   params: Promise<{
@@ -30,7 +31,11 @@ export async function generateMetadata({
 
 export default async function ShowDetailPage({ params }: ShowDetailPageProps) {
   const { id } = await params;
-  const show = await getShowById(Number(id));
+  const showId = Number(id);
+  const [show, initialWatched] = await Promise.all([
+    getShowById(showId),
+    isShowWatched(showId),
+  ]);
 
   if (!show) {
     notFound();
@@ -39,7 +44,7 @@ export default async function ShowDetailPage({ params }: ShowDetailPageProps) {
   return (
     <ShowsPageShell>
       <div className="mx-auto max-w-7xl">
-        <ShowDetailHero show={show} />
+        <ShowDetailHero show={show} initialWatched={initialWatched} />
       </div>
     </ShowsPageShell>
   );
