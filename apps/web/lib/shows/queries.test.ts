@@ -2,19 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Show } from "./types";
 
-const { createClient, cookies } = vi.hoisted(() => ({
-  createClient: vi.fn(),
-  cookies: vi.fn(async () => ({})),
+const { createAdminClient } = vi.hoisted(() => ({
+  createAdminClient: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
 
-vi.mock("next/headers", () => ({
-  cookies,
-}));
-
-vi.mock("@/lib/db/supabase/server", () => ({
-  createClient,
+vi.mock("@/lib/db/supabase/admin", () => ({
+  createAdminClient,
 }));
 
 import { getShowById, listShows, ShowsQueryError } from "./queries";
@@ -73,7 +68,7 @@ function createListQueryMock(result: {
 
 describe("getShowById", () => {
   beforeEach(() => {
-    createClient.mockReturnValue({
+    createAdminClient.mockReturnValue({
       from: vi.fn(() => ({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
@@ -96,7 +91,7 @@ describe("getShowById", () => {
   });
 
   it("returns null when the show does not exist", async () => {
-    createClient.mockReturnValue({
+    createAdminClient.mockReturnValue({
       from: vi.fn(() => ({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
@@ -113,7 +108,7 @@ describe("getShowById", () => {
   });
 
   it("throws ShowsQueryError when Supabase returns an error", async () => {
-    createClient.mockReturnValue({
+    createAdminClient.mockReturnValue({
       from: vi.fn(() => ({
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
@@ -142,7 +137,7 @@ describe("listShows", () => {
       count: 1,
     });
 
-    createClient.mockReturnValue({
+    createAdminClient.mockReturnValue({
       from: vi.fn(() => listQuery),
     });
 
@@ -164,7 +159,7 @@ describe("listShows", () => {
       count: 1,
     });
 
-    createClient.mockReturnValue({
+    createAdminClient.mockReturnValue({
       from: vi.fn(() => listQuery),
     });
 
@@ -182,7 +177,7 @@ describe("listShows", () => {
       count: null,
     });
 
-    createClient.mockReturnValue({
+    createAdminClient.mockReturnValue({
       from: vi.fn(() => listQuery),
     });
 

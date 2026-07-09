@@ -1,20 +1,8 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-
-import { ShowsPageContent } from "@/app/components/shows/ShowsPageContent";
 import { ShowsPageShell } from "@/app/components/shows/ShowsPageShell";
 import { ShowsResultsSkeleton } from "@/app/components/shows/ShowsResultsSkeleton";
+import { ShowsSearchBar } from "@/app/components/shows/ShowsSearchBar";
 
-export const metadata: Metadata = {
-  title: "Shows — ReelMind",
-  description: "Browse and search movies and TV shows.",
-};
-
-type ShowsPageProps = {
-  searchParams: Promise<{ page?: string; q?: string }>;
-};
-
-export default function ShowsPage({ searchParams }: ShowsPageProps) {
+export default function ShowsLoading() {
   return (
     <ShowsPageShell>
       <div className="mx-auto max-w-7xl space-y-8">
@@ -31,10 +19,9 @@ export default function ShowsPage({ searchParams }: ShowsPageProps) {
               show details.
             </p>
           </div>
+          <ShowsSearchBar />
         </header>
-        <Suspense fallback={<ShowsResultsSkeleton />}>
-          <ShowsPageContent searchParams={searchParams} />
-        </Suspense>
+        <ShowsResultsSkeleton />
       </div>
     </ShowsPageShell>
   );

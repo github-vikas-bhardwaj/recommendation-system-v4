@@ -1,6 +1,6 @@
 import { CtaSection } from "./components/landing/CtaSection";
 import { FeaturesSection } from "./components/landing/FeaturesSection";
-import { Footer } from "./components/landing/Footer";
+import { Footer } from "./components/landing/footer/Footer";
 import { HeroSection } from "./components/landing/HeroSection";
 import { HowItWorksSection } from "./components/landing/HowItWorksSection";
 

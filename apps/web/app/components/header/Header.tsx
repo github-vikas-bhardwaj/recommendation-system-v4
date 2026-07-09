@@ -1,12 +1,17 @@
+import { Suspense } from "react";
+
 import { AuthNav } from "./AuthNav";
+import { AuthNavSkeleton } from "./AuthNavSkeleton";
 import { HeaderBrand } from "./HeaderBrand";
 
-export default function Header() {
+export default async function Header() {
   return (
     <header className="glass sticky top-0 z-50">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
         <HeaderBrand />
-        <AuthNav />
+        <Suspense fallback={<AuthNavSkeleton />}>
+          <AuthNav />
+        </Suspense>
       </div>
     </header>
   );

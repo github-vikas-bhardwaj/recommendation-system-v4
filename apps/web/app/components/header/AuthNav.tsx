@@ -5,7 +5,6 @@ import { NavLink } from "./NavLink";
 
 export async function AuthNav() {
   const user = await getOptionalUser();
-
   return (
     <nav aria-label="Account" className="flex items-center gap-1">
       {user ? (

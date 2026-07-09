@@ -1,17 +1,18 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { stripHtml } from "@/lib/shows/format";
 import type { Show } from "@/lib/shows/types";
 
+import { SkeletonBlock } from "../ui/SkeletonBlock";
+import { ShowDetailWatchedToggle } from "./ShowDetailWatchedToggle";
 import { ShowPoster } from "./ShowPoster";
-import { WatchedToggle } from "./WatchedToggle";
 
 type ShowDetailHeroProps = {
   show: Show;
-  initialWatched: boolean;
 };
 
-export function ShowDetailHero({ show, initialWatched }: ShowDetailHeroProps) {
+export function ShowDetailHero({ show }: ShowDetailHeroProps) {
   const summary = stripHtml(show.summary);
 
   return (
@@ -68,11 +69,11 @@ export function ShowDetailHero({ show, initialWatched }: ShowDetailHeroProps) {
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-6">
-            <WatchedToggle
-              showId={show.id}
-              showName={show.name}
-              initialWatched={initialWatched}
-            />
+            <Suspense
+              fallback={<SkeletonBlock className="h-6 w-24 rounded-full" />}
+            >
+              <ShowDetailWatchedToggle showId={show.id} showName={show.name} />
+            </Suspense>
             <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <dt className="text-zinc-500">Status</dt>

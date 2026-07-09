@@ -28,8 +28,8 @@ vi.mock("next/image", () => ({
   ),
 }));
 
-vi.mock("@/lib/shows/queries", () => ({
-  listShows: vi.fn(async () => ({
+vi.mock("@/lib/shows/query.cached", () => ({
+  listShowsCached: vi.fn(async () => ({
     items: [sampleShow],
     currentPage: 1,
     totalPages: 1,
@@ -41,11 +41,15 @@ vi.mock("@/lib/watched/queries", () => ({
   getWatchedShowIds: vi.fn(async () => new Set<number>()),
 }));
 
+vi.mock("@/app/components/shows/ShowsPageContent", () => ({
+  ShowsPageContent: () => <h2>Under the Dome</h2>,
+}));
+
 import ShowsPage from "./page";
 
 describe("Shows page", () => {
-  it("renders the shows heading", async () => {
-    const ui = await ShowsPage({ searchParams: Promise.resolve({}) });
+  it("renders the shows heading", () => {
+    const ui = ShowsPage({ searchParams: Promise.resolve({}) });
     render(ui);
 
     expect(
@@ -53,8 +57,8 @@ describe("Shows page", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders show cards on the first page", async () => {
-    const ui = await ShowsPage({ searchParams: Promise.resolve({}) });
+  it("renders show cards on the first page", () => {
+    const ui = ShowsPage({ searchParams: Promise.resolve({}) });
     render(ui);
 
     expect(
