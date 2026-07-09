@@ -52,3 +52,11 @@ export async function setWatchedAction(
 
   return { ok: true };
 }
+
+export async function unwatchShowAction(showId: number): Promise<void> {
+  await setWatchedAction(showId, false);
+}
+
+export async function watchShowAction(showId: number): Promise<void> {
+  await setWatchedAction(showId, true);
+}
