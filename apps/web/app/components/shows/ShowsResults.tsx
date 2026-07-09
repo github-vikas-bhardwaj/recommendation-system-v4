@@ -1,6 +1,6 @@
 import { ShowCardGrid } from "@/app/components/shows/ShowCardGrid";
 import { ShowsPagination } from "@/app/components/shows/ShowsPagination";
-import { listShows } from "@/lib/shows/queries";
+import { listShowsCached } from "@/lib/shows/query.cached";
 import { SHOWS_PAGE_SIZE } from "@/lib/shows/types";
 import { getWatchedShowIds } from "@/lib/watched/queries";
 
@@ -11,7 +11,7 @@ type ShowsResultsProps = {
 
 export async function ShowsResults({ query, page }: ShowsResultsProps) {
   const [{ items, currentPage, totalPages, total }, watchedShowIds] =
-    await Promise.all([listShows({ query, page }), getWatchedShowIds()]);
+    await Promise.all([listShowsCached(query, page), getWatchedShowIds()]);
 
   const start = total === 0 ? 0 : (currentPage - 1) * SHOWS_PAGE_SIZE + 1;
   const end = Math.min(currentPage * SHOWS_PAGE_SIZE, total);

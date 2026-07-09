@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
-import { ShowDetailHero } from "@/app/components/shows/ShowDetailHero";
+import { ShowDetailHeroSkeleton } from "@/app/components/shows/ShowDetailHeroSkeleton";
 import { ShowsPageShell } from "@/app/components/shows/ShowsPageShell";
 import { stripHtml } from "@/lib/shows/format";
-import { getShowById } from "@/lib/shows/queries";
-import { isShowWatched } from "@/lib/watched/queries";
+import { getShowByIdCached } from "@/lib/shows/query.cached";
+
+import { ShowDetailPageContent } from "./ShowDetailPageContent";
 
 type ShowDetailPageProps = {
   params: Promise<{
@@ -17,7 +18,7 @@ export async function generateMetadata({
   params,
 }: ShowDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  const show = await getShowById(Number(id));
+  const show = await getShowByIdCached(Number(id));
 
   if (!show) {
     return { title: "Show not found — ReelMind" };
@@ -29,22 +30,13 @@ export async function generateMetadata({
   };
 }
 
-export default async function ShowDetailPage({ params }: ShowDetailPageProps) {
-  const { id } = await params;
-  const showId = Number(id);
-  const [show, initialWatched] = await Promise.all([
-    getShowById(showId),
-    isShowWatched(showId),
-  ]);
-
-  if (!show) {
-    notFound();
-  }
-
+export default function ShowDetailPage({ params }: ShowDetailPageProps) {
   return (
     <ShowsPageShell>
       <div className="mx-auto max-w-7xl">
-        <ShowDetailHero show={show} initialWatched={initialWatched} />
+        <Suspense fallback={<ShowDetailHeroSkeleton />}>
+          <ShowDetailPageContent params={params} />
+        </Suspense>
       </div>
     </ShowsPageShell>
   );

@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { ShowsPageContent } from "@/app/components/shows/ShowsPageContent";
 import { ShowsPageShell } from "@/app/components/shows/ShowsPageShell";
-import { ShowsResults } from "@/app/components/shows/ShowsResults";
 import { ShowsResultsSkeleton } from "@/app/components/shows/ShowsResultsSkeleton";
-import { ShowsSearchBar } from "@/app/components/shows/ShowsSearchBar";
 
 export const metadata: Metadata = {
   title: "Shows — ReelMind",
@@ -12,18 +11,10 @@ export const metadata: Metadata = {
 };
 
 type ShowsPageProps = {
-  searchParams: Promise<{
-    page?: string;
-    q?: string;
-  }>;
+  searchParams: Promise<{ page?: string; q?: string }>;
 };
 
-export default async function ShowsPage({ searchParams }: ShowsPageProps) {
-  const params = await searchParams;
-  const query = params.q?.trim() ?? "";
-  const page = Number(params.page ?? "1");
-  const safePage = Number.isFinite(page) ? page : 1;
-
+export default function ShowsPage({ searchParams }: ShowsPageProps) {
   return (
     <ShowsPageShell>
       <div className="mx-auto max-w-7xl space-y-8">
@@ -40,14 +31,9 @@ export default async function ShowsPage({ searchParams }: ShowsPageProps) {
               show details.
             </p>
           </div>
-          <ShowsSearchBar defaultQuery={query} />
         </header>
-
-        <Suspense
-          key={`${safePage}-${query}`}
-          fallback={<ShowsResultsSkeleton />}
-        >
-          <ShowsResults query={query} page={safePage} />
+        <Suspense fallback={<ShowsResultsSkeleton />}>
+          <ShowsPageContent searchParams={searchParams} />
         </Suspense>
       </div>
     </ShowsPageShell>

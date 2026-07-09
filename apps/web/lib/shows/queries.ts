@@ -1,8 +1,6 @@
 import "server-only";
 
-import { cookies } from "next/headers";
-
-import { createClient } from "@/lib/db/supabase/server";
+import { createAdminClient } from "@/lib/db/supabase/admin";
 
 import { mapShowRow, type ShowRow } from "./map-row";
 import type { Show } from "./types";
@@ -31,12 +29,12 @@ function buildSearchFilter(query: string): string {
   return `name.ilike.%${escaped}%,summary.ilike.%${escaped}%`;
 }
 
-async function getSupabase() {
-  return createClient(await cookies());
+function getSupabase() {
+  return createAdminClient();
 }
 
 export async function getShowById(id: number): Promise<Show | null> {
-  const supabase = await getSupabase();
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("shows")
     .select("*")
@@ -65,7 +63,7 @@ export async function listShows({
   page = 1,
   pageSize = SHOWS_PAGE_SIZE,
 }: ListShowsOptions = {}): Promise<ListShowsResult> {
-  const supabase = await getSupabase();
+  const supabase = getSupabase();
   const normalizedQuery = query.trim();
   const safePage = Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1;
   const from = (safePage - 1) * pageSize;

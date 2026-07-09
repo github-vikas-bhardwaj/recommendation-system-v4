@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { AuthCard } from "../components/auth/AuthCard";
 import { AuthHeading } from "../components/auth/AuthHeading";
 import { AuthPageShell } from "../components/auth/AuthPageShell";
 import { LoginForm } from "../components/auth/LoginForm";
+import { LoginFormSection } from "./LoginFormSection";
 
 export const metadata: Metadata = {
   title: "Log in — ReelMind",
@@ -14,8 +16,7 @@ type LoginPageProps = {
   searchParams: Promise<{ next?: string }>;
 };
 
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { next } = await searchParams;
+export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <AuthPageShell>
       <AuthCard>
@@ -23,7 +24,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           title="Welcome back"
           description="Log in to pick up your recommendations where you left off."
         />
-        <LoginForm next={next} />
+        <Suspense fallback={<LoginForm />}>
+          <LoginFormSection searchParams={searchParams} />
+        </Suspense>
       </AuthCard>
     </AuthPageShell>
   );
