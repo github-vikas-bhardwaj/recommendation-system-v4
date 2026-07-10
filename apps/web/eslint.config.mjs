@@ -16,6 +16,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Playwright (generated — do not lint)
+    "playwright-report/**",
+    "test-results/**",
+    "blob-report/**",
+    "playwright/.cache/**",
+    "playwright/.auth/**",
   ]),
   {
     rules: {
