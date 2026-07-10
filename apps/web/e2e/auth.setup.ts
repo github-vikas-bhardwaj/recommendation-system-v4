@@ -1,13 +1,14 @@
 import { expect, test as setup } from "@playwright/test";
 
 import { authFile } from "./constants";
+import { canRunAuthenticatedE2e } from "./fixtures/ci-env";
 import { waitForFirstPoster } from "./fixtures/shows";
-import { getE2eCredentials, hasE2eCredentials } from "./fixtures/test-user";
+import { getE2eCredentials } from "./fixtures/test-user";
 
 setup("authenticate", async ({ page }) => {
   setup.skip(
-    !hasE2eCredentials(),
-    "Set E2E_USER_EMAIL and E2E_USER_PASSWORD in apps/web/.env.local",
+    !canRunAuthenticatedE2e(),
+    "Set E2E_USER_* and Supabase secrets (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) for authenticated E2E.",
   );
 
   const credentials = getE2eCredentials();

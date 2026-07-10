@@ -1,13 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-const hasRealSupabase =
-  Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL!.includes("example.supabase.co");
+import { hasRealSupabase } from "../fixtures/ci-env";
 
 test.describe("login (guest)", () => {
   test.beforeEach(() => {
     test.skip(
-      !hasRealSupabase,
+      !hasRealSupabase(),
       "Requires a real Supabase project (not CI placeholders).",
     );
   });

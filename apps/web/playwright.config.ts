@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 
 import { authFile } from "./e2e/constants";
-import { hasE2eCredentials } from "./e2e/fixtures/test-user";
+import { canRunAuthenticatedE2e } from "./e2e/fixtures/ci-env";
 
 function loadLocalEnv() {
   for (const file of [".env", ".env.local"]) {
@@ -39,7 +39,7 @@ loadLocalEnv();
 const e2ePort = 3001;
 const e2eBaseURL = `http://localhost:${e2ePort}`;
 
-const e2eCredentialsConfigured = hasE2eCredentials();
+const e2eCredentialsConfigured = canRunAuthenticatedE2e();
 
 const guestProject = {
   name: "guest",
@@ -92,7 +92,10 @@ export default defineConfig({
     baseURL: e2eBaseURL,
     trace: "on-first-retry",
   },
-  projects: [guestProject, ...authenticatedProjects],
+  projects: [
+    guestProject,
+    ...(e2eCredentialsConfigured ? authenticatedProjects : []),
+  ],
   webServer: {
     command: `npm run dev -- -p ${e2ePort}`,
     url: e2eBaseURL,
