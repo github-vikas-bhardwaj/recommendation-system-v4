@@ -8,7 +8,6 @@ type ShowPosterProps = {
   sizes: string;
   className?: string;
   priority?: boolean;
-  quality?: number;
   placeholderClassName?: string;
   compact?: boolean;
   "aria-hidden"?: boolean;
@@ -20,7 +19,6 @@ export function ShowPoster({
   sizes,
   className = "object-cover",
   priority = false,
-  quality = 100,
   placeholderClassName = "",
   compact = false,
   "aria-hidden": ariaHidden,
@@ -48,7 +46,6 @@ export function ShowPoster({
       alt={alt}
       fill
       priority={priority}
-      quality={quality}
       sizes={sizes}
       className={className}
       aria-hidden={ariaHidden}
