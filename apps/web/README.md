@@ -125,18 +125,15 @@ Production values go in the **Vercel dashboard**, not in git.
 
 From repo root:
 
-| Command                 | URL                    |
-| ----------------------- | ---------------------- |
-| `npm run dev:web`       | http://localhost:3000  |
-| `npm run dev:web:https` | https://localhost:3000 |
-| `npm run dev`           | API + web together     |
-| `npm run dev:https`     | API + web (HTTPS web)  |
+| Command           | URL                   |
+| ----------------- | --------------------- |
+| `npm run dev:web` | http://localhost:3000 |
+| `npm run dev`     | API + web together    |
 
 Or from `apps/web`:
 
 ```bash
 npm run dev
-npm run dev:https   # next dev --experimental-https
 ```
 
 ## Quality
@@ -149,6 +146,7 @@ npm run dev:https   # next dev --experimental-https
 | `npm run lint:web:fix`  | ESLint with `--fix`          |
 | `npm run typecheck:web` | `tsc --noEmit`               |
 | `npm run test:web`      | Vitest single run            |
+| `npm run test:e2e`      | Playwright E2E (from root)   |
 | `npm run check:web`     | ESLint + typecheck + Vitest  |
 | `npm run check`         | Prettier + `check:web` + API |
 | `npm run check:push`    | Full gate (pre-push hook)    |
@@ -160,6 +158,7 @@ npm run dev:https   # next dev --experimental-https
 | `npm run lint`      | ESLint                            |
 | `npm run typecheck` | `tsc --noEmit`                    |
 | `npm run test:run`  | Vitest single run                 |
+| `npm run test:e2e`  | Playwright E2E                    |
 | `npm run check`     | lint + typecheck + test           |
 | `npm run build`     | Production build (needs env vars) |
 
@@ -202,7 +201,20 @@ npm run test:web        # from root
 npm run test:run        # from apps/web (CI)
 ```
 
-**Limits:** Vitest suits Client Components and utilities. Async Server Components need E2E (planned).
+**Limits:** Vitest suits Client Components and utilities. Use Playwright for full-page E2E (see below).
+
+### E2E (Playwright)
+
+Config: `playwright.config.ts`. Tests: `e2e/*.spec.ts`.
+
+Playwright starts its own dev server on **http://localhost:3001** (separate from daily dev on port 3000).
+
+```bash
+npm run test:e2e        # from root
+npx playwright install chromium   # first time only
+```
+
+CI runs via `.github/workflows/playwright.yml`.
 
 ---
 

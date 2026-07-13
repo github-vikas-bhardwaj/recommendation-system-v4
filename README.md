@@ -54,13 +54,11 @@ npm run validate:runtime     # Node 22.22.1 + Python 3.12.12 via uv
 
 ### Run dev servers
 
-| Command                 | What starts                       |
-| ----------------------- | --------------------------------- |
-| `npm run dev:api`       | API only — http://127.0.0.1:8000  |
-| `npm run dev:web`       | Web only — http://localhost:3000  |
-| `npm run dev:web:https` | Web only — https://localhost:3000 |
-| `npm run dev`           | API + web (HTTP)                  |
-| `npm run dev:https`     | API + web (HTTPS on web)          |
+| Command           | What starts                      |
+| ----------------- | -------------------------------- |
+| `npm run dev:api` | API only — http://127.0.0.1:8000 |
+| `npm run dev:web` | Web only — http://localhost:3000 |
+| `npm run dev`     | API + web together               |
 
 | URL                          | Description                              |
 | ---------------------------- | ---------------------------------------- |
@@ -219,34 +217,33 @@ release/0.0.3
 
 ### Dev
 
-| Script                  | What it does               |
-| ----------------------- | -------------------------- |
-| `npm run dev:api`       | Uvicorn with `--reload`    |
-| `npm run dev:web`       | Next.js dev server (HTTP)  |
-| `npm run dev:web:https` | Next.js dev server (HTTPS) |
-| `npm run dev`           | API + web together         |
-| `npm run dev:https`     | API + web (HTTPS on web)   |
+| Script            | What it does            |
+| ----------------- | ----------------------- |
+| `npm run dev:api` | Uvicorn with `--reload` |
+| `npm run dev:web` | Next.js dev server      |
+| `npm run dev`     | API + web together      |
 
 ### Quality
 
-| Script                     | What it does                                    |
-| -------------------------- | ----------------------------------------------- |
-| `npm run format`           | Prettier write (root + web)                     |
-| `npm run format:check`     | Prettier check only                             |
-| `npm run lint:api`         | Ruff fix + format on all API files              |
-| `npm run lint:api:check`   | Ruff check + format check (API)                 |
-| `npm run typecheck:api`    | Pyright                                         |
-| `npm run test:api`         | pytest                                          |
-| `npm run test:web`         | Vitest (`apps/web`)                             |
-| `npm run check:api`        | `lint:api:check` + `typecheck:api` + `test:api` |
-| `npm run lint:web`         | ESLint (`apps/web`)                             |
-| `npm run lint:web:fix`     | ESLint with `--fix`                             |
-| `npm run typecheck:web`    | `tsc --noEmit` (`apps/web`)                     |
-| `npm run check:web`        | ESLint + typecheck + Vitest                     |
-| `npm run check`            | `format:check` + `check:web` + `check:api`      |
-| `npm run check:push`       | Alias for `check` (pre-push hook)               |
-| `npm run validate:runtime` | Node + Python version check                     |
-| `npm run validate:branch`  | Branch name check only                          |
+| Script                     | What it does                                       |
+| -------------------------- | -------------------------------------------------- |
+| `npm run format`           | Prettier write (root + web)                        |
+| `npm run format:check`     | Prettier check only                                |
+| `npm run lint:api`         | Ruff fix + format on all API files                 |
+| `npm run lint:api:check`   | Ruff check + format check (API)                    |
+| `npm run typecheck:api`    | Pyright                                            |
+| `npm run test:api`         | pytest                                             |
+| `npm run test:web`         | Vitest (`apps/web`)                                |
+| `npm run test:e2e`         | Playwright E2E (`apps/web`, http://localhost:3001) |
+| `npm run check:api`        | `lint:api:check` + `typecheck:api` + `test:api`    |
+| `npm run lint:web`         | ESLint (`apps/web`)                                |
+| `npm run lint:web:fix`     | ESLint with `--fix`                                |
+| `npm run typecheck:web`    | `tsc --noEmit` (`apps/web`)                        |
+| `npm run check:web`        | ESLint + typecheck + Vitest                        |
+| `npm run check`            | `format:check` + `check:web` + `check:api`         |
+| `npm run check:push`       | Alias for `check` (pre-push hook)                  |
+| `npm run validate:runtime` | Node + Python version check                        |
+| `npm run validate:branch`  | Branch name check only                             |
 
 ### Setup
 
