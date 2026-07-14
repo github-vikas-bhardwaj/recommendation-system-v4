@@ -76,7 +76,7 @@ Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **e
 | `apiUrlConfigured: false`               | Set `API_URL` → redeploy                                     |
 | Build `Missing environment variable: …` | Add full [env table](#first-time-setup) on Vercel → redeploy |
 
-**Vercel deploys before CI finishes:** enable [Deployment Checks](https://vercel.com/docs/deployments/deployment-checks) and require GitHub check **`CI complete`**. See [root README — Vercel](../../README.md#vercel-web).
+**Vercel deploys before CI finishes:** enable [Deployment Checks](https://vercel.com/docs/deployments/deployment-checks) and require GitHub check **`CI OK`**. See [root README — Vercel](../../README.md#vercel-web).
 
 See also [root README — Deployment](../../README.md#deployment).
 
@@ -166,16 +166,16 @@ npm run dev
 
 ### From repo root
 
-| Command                 | What it does                 |
-| ----------------------- | ---------------------------- |
-| `npm run lint:web`      | ESLint                       |
-| `npm run lint:web:fix`  | ESLint with `--fix`          |
-| `npm run typecheck:web` | `tsc --noEmit`               |
-| `npm run test:web`      | Vitest single run            |
-| `npm run test:e2e`      | Playwright E2E (from root)   |
-| `npm run check:web`     | ESLint + typecheck + Vitest  |
-| `npm run check`         | Prettier + `check:web` + API |
-| `npm run check:push`    | Full gate (pre-push hook)    |
+| Command                 | What it does                                     |
+| ----------------------- | ------------------------------------------------ |
+| `npm run lint:web`      | ESLint                                           |
+| `npm run lint:web:fix`  | ESLint with `--fix`                              |
+| `npm run typecheck:web` | `tsc --noEmit`                                   |
+| `npm run test:web`      | Vitest single run                                |
+| `npm run test:e2e`      | Playwright E2E (from root)                       |
+| `npm run check:web`     | ESLint + typecheck + Vitest                      |
+| `npm run check`         | Full local gate (format + contracts + web + api) |
+| `npm run check:push`    | Path-aware pre-push lanes (same as git hook)     |
 
 ### From `apps/web`
 
@@ -206,13 +206,13 @@ npm run build
 
 ## Git hooks & CI
 
-| When           | What runs for web                                                                           |
-| -------------- | ------------------------------------------------------------------------------------------- |
-| **pre-commit** | lint-staged (ESLint + Prettier on staged files) + `format:check`                            |
-| **pre-push**   | `check:web` (lint + typecheck + test) via `npm run check:push`                              |
-| **CI**         | Separate jobs: **Web lint**, **Web typecheck**, **Web test**; **Web build** after they pass |
+| When           | What runs for web                                                                      |
+| -------------- | -------------------------------------------------------------------------------------- |
+| **pre-commit** | lint-staged (ESLint + Prettier on staged files) + root `format:check`                  |
+| **pre-push**   | Path-aware: `check:web` only if `apps/web` (or shared) changed — see root README       |
+| **CI**         | Detect-changes lanes → web lint/type/test → **web-build ∥ Playwright E2E** → **CI OK** |
 
-See [root README](../../README.md#ci-github-actions).
+See [root README — CI](../../README.md#ci-github-actions).
 
 ---
 
@@ -231,7 +231,7 @@ npm run test:run        # from apps/web (CI)
 
 ### E2E (Playwright)
 
-Config: `playwright.config.ts`. Tests: `e2e/*.spec.ts`.
+Config: `playwright.config.ts`. Tests: `e2e/**/*.spec.ts`.
 
 Playwright starts its own dev server on **http://localhost:3001** (separate from daily dev on port 3000).
 
@@ -240,7 +240,7 @@ npm run test:e2e        # from root
 npx playwright install chromium   # first time only
 ```
 
-CI runs via `.github/workflows/playwright.yml`.
+CI runs Playwright inside [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) (**Playwright E2E** job), after web unit gates and in parallel with **Web build**. There is no separate `playwright.yml`.
 
 ---
 

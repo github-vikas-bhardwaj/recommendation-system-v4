@@ -32,7 +32,7 @@
     "typecheck:web": "cd apps/web && npm run typecheck",
     "check:web": "npm run lint:web && npm run typecheck:web && npm run test:web",
     "check": "npm run format:check && npm run codegen:contracts:check && npm run check:web && npm run check:api",
-    "check:push": "npm run check",
+    "check:push": "sh .husky/pre-push",
     "codegen:contracts": "node scripts/codegen-contracts.mjs",
     "codegen:contracts:check": "npm run codegen:contracts && git diff --exit-code apps/web/lib/api/generated apps/api/schemas/generated"
   },

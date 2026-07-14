@@ -111,7 +111,8 @@ jobs:
           echo "run_e2e=$RUN_E2E" >> "$GITHUB_OUTPUT"
           echo "filter web=$WEB api=$API contracts=$CONTRACTS ci=$CI"
           echo "flags run_web=$RUN_WEB run_api=$RUN_API run_contracts=$RUN_CONTRACTS run_format=$RUN_FORMAT run_e2e=$RUN_E2E"
-    # Job id — referenced later if something needs format to pass first
+
+  # Job id — referenced later if something needs format to pass first
   format:
     # Label in the Actions UI
     name: Format
@@ -145,3 +146,471 @@ jobs:
       # Fail if any tracked file is not Prettier-clean
       - name: Check formatting
         run: npm run format:check
+
+  web-lint:
+    name: Web lint
+    # Need flags from detect-changes
+    needs: detect-changes
+    # Only run when web lane is on (web OR contracts OR ci)
+    if: needs.detect-changes.outputs.run_web == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Web uses apps/web/.nvmrc (may match root, but keep consistent with old CI)
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: npm
+          # Both lockfiles — root scripts + web app
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+
+      # Root package.json scripts (npm run lint:web lives at repo root)
+      - name: Install root dependencies
+        run: npm ci
+
+      # ESLint deps live under apps/web
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      # Runs: cd apps/web && npm run lint (via root script)
+      - name: Lint web
+        run: npm run lint:web
+
+  web-typecheck:
+    name: Web typecheck
+    needs: detect-changes
+    if: needs.detect-changes.outputs.run_web == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Typecheck web
+        run: npm run typecheck:web
+
+  web-test:
+    name: Web test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.run_web == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Test web
+        run: npm run test:web
+
+  api-lint:
+    name: API lint
+    needs: detect-changes
+    # Only when api lane is on (api OR contracts OR ci)
+    if: needs.detect-changes.outputs.run_api == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Root scripts (lint:api:check) need Node
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      # Install uv; pin working-directory so it finds apps/api/pyproject.toml / uv.lock
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.3.0
+        with:
+          working-directory: apps/api
+
+      - name: Install root dependencies
+        run: npm ci
+
+      # Install Python package + dev tools (ruff, etc.) into apps/api .venv
+      - name: Sync API dependencies
+        run: npm run sync:api
+
+      # ruff check + ruff format --check (no autofix in CI)
+      - name: Lint API
+        run: npm run lint:api:check
+
+  api-typecheck:
+    name: API typecheck
+    needs: detect-changes
+    if: needs.detect-changes.outputs.run_api == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.3.0
+        with:
+          working-directory: apps/api
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Sync API dependencies
+        run: npm run sync:api
+
+      # pyright via: cd apps/api && uv run pyright
+      - name: Typecheck API
+        run: npm run typecheck:api
+
+  api-test:
+    name: API test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.run_api == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.3.0
+        with:
+          working-directory: apps/api
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Sync API dependencies
+        run: npm run sync:api
+
+      # pytest via: cd apps/api && uv run pytest
+      - name: Test API
+        run: npm run test:api
+
+  contracts:
+    name: API contracts
+    needs: detect-changes
+    # Only when contracts/codegen or root CI tooling changed
+    if: needs.detect-changes.outputs.run_contracts == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Web Node version — codegen uses apps/web package binaries
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+
+      # datamodel-codegen + ruff format run under apps/api
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.3.0
+        with:
+          working-directory: apps/api
+
+      # Root scripts: codegen:contracts, codegen:contracts:check
+      - name: Install root dependencies
+        run: npm ci
+
+      # json2ts / json-schema-to-zod live in apps/web
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      # Python codegen + format deps
+      - name: Sync API dependencies
+        run: npm run sync:api
+
+      # Regenerate TS + Python from JSON Schema; fail if git diff is non-empty
+      - name: Check contracts codegen is up to date
+        run: npm run codegen:contracts:check
+
+      # Pydantic/API contract tests only (lighter than full api-test)
+      - name: Test API contracts
+        run: npm run test:api:contracts
+
+  web-build:
+    name: Web build
+    # Wait for these jobs (some may be skipped — handled in if:)
+    needs:
+      - detect-changes
+      - format
+      - web-lint
+      - web-typecheck
+      - web-test
+      - contracts
+    # Run build only for web lane, and only if required parents didn't fail
+    if: |
+      always() &&
+      needs.detect-changes.result == 'success' &&
+      needs.detect-changes.outputs.run_web == 'true' &&
+      needs.format.result == 'success' &&
+      needs.web-lint.result == 'success' &&
+      needs.web-typecheck.result == 'success' &&
+      needs.web-test.result == 'success' &&
+      (needs.contracts.result == 'success' || needs.contracts.result == 'skipped')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: npm
+          # Build only needs the web lockfile
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      # next build evaluates serverEnv — placeholders are enough for CI compile
+      - name: Build web
+        working-directory: apps/web
+        env:
+          APP_ENV: production
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          API_URL: http://127.0.0.1:8000
+          API_INTERNAL_SECRET: ci-build-placeholder-internal-secret
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder-anon-key
+          DB_PASSWORD: ci-build-placeholder
+        run: npm run build
+
+  e2e:
+    name: Playwright E2E
+    # Same parents as web-build — e2e waits on cheap gates, not on web-build
+    needs:
+      - detect-changes
+      - format
+      - web-lint
+      - web-typecheck
+      - web-test
+      - contracts
+    # Sibling of web-build: run when e2e lane is on and parents didn't fail
+    if: |
+      always() &&
+      needs.detect-changes.result == 'success' &&
+      needs.detect-changes.outputs.run_e2e == 'true' &&
+      needs.format.result == 'success' &&
+      needs.web-lint.result == 'success' &&
+      needs.web-typecheck.result == 'success' &&
+      needs.web-test.result == 'success' &&
+      (needs.contracts.result == 'success' || needs.contracts.result == 'skipped')
+    # E2E can hang; keep a hard ceiling
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    # Most steps run from the Next app
+    defaults:
+      run:
+        working-directory: apps/web
+    # Defaults for Next + BFF stub (Playwright webServer inherits env)
+    env:
+      APP_ENV: local
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      API_URL: http://127.0.0.1:8000
+      API_INTERNAL_SECRET: ci-e2e-placeholder-internal-secret
+      DB_PASSWORD: ci-build-placeholder
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+
+      # Root scripts / workspace tooling
+      - name: Install root dependencies
+        working-directory: . # override defaults.working-directory
+        run: npm ci
+
+      - name: Install web dependencies
+        run: npm ci
+
+      # Browsers + OS deps for Chromium
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        env:
+          # Real auth secrets from GitHub (authenticated specs)
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+          E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+        run: |
+          # Fallbacks so guest specs still run if secrets are missing
+          export NEXT_PUBLIC_SUPABASE_URL="${NEXT_PUBLIC_SUPABASE_URL:-https://example.supabase.co}"
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-ci-build-placeholder-anon-key}"
+          export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-ci-build-placeholder-service-role-key}"
+          npm run test:e2e
+
+      # Keep HTML report even when tests fail (unless cancelled)
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 30
+
+  ci-ok:
+    name: CI OK
+    # List every job we care about for the merge signal
+    needs:
+      - detect-changes
+      - format
+      - web-lint
+      - web-typecheck
+      - web-test
+      - api-lint
+      - api-typecheck
+      - api-test
+      - contracts
+      - web-build
+      - e2e
+    # Always evaluate — otherwise a skipped parent would skip ci-ok itself
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Verify required lanes succeeded
+        run: |
+          # Fail the merge gate if detect-changes itself broke
+          if [ "${{ needs.detect-changes.result }}" != "success" ]; then
+            echo "detect-changes failed"
+            exit 1
+          fi
+
+          RUN_WEB='${{ needs.detect-changes.outputs.run_web }}'
+          RUN_API='${{ needs.detect-changes.outputs.run_api }}'
+          RUN_CONTRACTS='${{ needs.detect-changes.outputs.run_contracts }}'
+          RUN_FORMAT='${{ needs.detect-changes.outputs.run_format }}'
+          RUN_E2E='${{ needs.detect-changes.outputs.run_e2e }}'
+
+          # Helper: allow success or skipped; reject failure/cancelled
+          ok() {
+            local name="$1"
+            local result="$2"
+            if [ "$result" = "success" ] || [ "$result" = "skipped" ]; then
+              echo "$name=$result (ok)"
+              return 0
+            fi
+            echo "$name=$result (not ok)"
+            return 1
+          }
+
+          # Format: must be ok whenever it was supposed to run;
+          # if skipped while run_format=true, that's also bad.
+          if [ "$RUN_FORMAT" = "true" ]; then
+            [ "${{ needs.format.result }}" = "success" ] || { echo "format must succeed"; exit 1; }
+          else
+            ok format "${{ needs.format.result }}" || exit 1
+          fi
+
+          if [ "$RUN_WEB" = "true" ]; then
+            [ "${{ needs.web-lint.result }}" = "success" ] || exit 1
+            [ "${{ needs.web-typecheck.result }}" = "success" ] || exit 1
+            [ "${{ needs.web-test.result }}" = "success" ] || exit 1
+            [ "${{ needs.web-build.result }}" = "success" ] || exit 1
+          else
+            ok web-lint "${{ needs.web-lint.result }}" || exit 1
+            ok web-typecheck "${{ needs.web-typecheck.result }}" || exit 1
+            ok web-test "${{ needs.web-test.result }}" || exit 1
+            ok web-build "${{ needs.web-build.result }}" || exit 1
+          fi
+
+          # E2E: required when run_e2e; optional skip when false (pure API)
+          if [ "$RUN_E2E" = "true" ]; then
+            [ "${{ needs.e2e.result }}" = "success" ] || { echo "e2e must succeed"; exit 1; }
+          else
+            ok e2e "${{ needs.e2e.result }}" || exit 1
+          fi
+
+          if [ "$RUN_API" = "true" ]; then
+            [ "${{ needs.api-lint.result }}" = "success" ] || exit 1
+            [ "${{ needs.api-typecheck.result }}" = "success" ] || exit 1
+            [ "${{ needs.api-test.result }}" = "success" ] || exit 1
+          else
+            ok api-lint "${{ needs.api-lint.result }}" || exit 1
+            ok api-typecheck "${{ needs.api-typecheck.result }}" || exit 1
+            ok api-test "${{ needs.api-test.result }}" || exit 1
+          fi
+
+          if [ "$RUN_CONTRACTS" = "true" ]; then
+            [ "${{ needs.contracts.result }}" = "success" ] || exit 1
+          else
+            ok contracts "${{ needs.contracts.result }}" || exit 1
+          fi
+
+          echo "CI OK"

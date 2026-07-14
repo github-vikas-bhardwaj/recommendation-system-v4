@@ -482,19 +482,21 @@ pre-commit (fast)
   ├── lint-staged        Ruff on staged .py files
   └── format:check
 
-pre-push (full)
-  └── npm run check:push
-        ├── format:check
-        ├── check:web
-        └── check:api    ← Ruff + Pyright + pytest
+pre-push (path-aware)
+  └── npm run check:push   # or: sh .husky/pre-push
+        ├── codegen:contracts:check   (if contracts/shared)
+        ├── check:web                 (if apps/web or shared)
+        └── check:api                 (if apps/api or shared)  ← Ruff + Pyright + pytest
 
 commit-msg
   └── commitlint
 ```
 
+Full suite (optional): `npm run check`. Merge gate: GitHub **CI OK** (includes e2e + web build).
+
 ### CI (GitHub Actions)
 
-Parallel jobs: **API lint**, **API typecheck**, **API test** — see [root README](../../README.md#ci-github-actions).
+Path-filtered lanes — API jobs skip when only web changed. See [root README — CI](../../README.md#ci-github-actions).
 
 ---
 
