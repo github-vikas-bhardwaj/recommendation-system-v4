@@ -111,3 +111,37 @@ jobs:
           echo "run_e2e=$RUN_E2E" >> "$GITHUB_OUTPUT"
           echo "filter web=$WEB api=$API contracts=$CONTRACTS ci=$CI"
           echo "flags run_web=$RUN_WEB run_api=$RUN_API run_contracts=$RUN_CONTRACTS run_format=$RUN_FORMAT run_e2e=$RUN_E2E"
+    # Job id — referenced later if something needs format to pass first
+  format:
+    # Label in the Actions UI
+    name: Format
+    # Wait for detect-changes to finish so outputs exist
+    needs: detect-changes
+    # Skip this job unless format lane was requested
+    if: needs.detect-changes.outputs.run_format == 'true'
+    # Same runner image as other jobs
+    runs-on: ubuntu-latest
+
+    steps:
+      # Get the repo code onto this runner (each job starts clean)
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      # Install Node matching root .nvmrc
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          # Read version from repo root .nvmrc
+          node-version-file: .nvmrc
+          # Cache npm downloads between runs
+          cache: npm
+          # Lockfile used for the cache key
+          cache-dependency-path: package-lock.json
+
+      # Install root deps (prettier lives here)
+      - name: Install dependencies
+        run: npm ci
+
+      # Fail if any tracked file is not Prettier-clean
+      - name: Check formatting
+        run: npm run format:check
