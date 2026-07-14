@@ -14,9 +14,15 @@ export const metadata: Metadata = {
 export default async function RecommendationsPage() {
   const watchedShows = await listWatchedShows();
   const showIds = watchedShows.map((show) => show.id);
-  // ignore unused variable eslint rule
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const apiResult = await fetchRecommendations(showIds);
+
+  // Stub phase: call the BFF, but don't fail the page if the API is down
+  // (Playwright CI, Render cold start). Wire ui to apiResult next.
+  try {
+    await fetchRecommendations(showIds);
+  } catch {
+    // Intentionally ignored until recommendations UI consumes the response.
+  }
+
   return (
     <RecommendationsPageShell>
       <div className="mx-auto max-w-5xl space-y-8">
