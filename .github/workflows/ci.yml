@@ -1,172 +1,113 @@
+# Human-readable name in the GITHUB Actions Tab
 name: CI
 
+# WHEN this workflow runs
 on:
+  # On EVERY PUSH to the MAIN branch
   push:
     branches: [main]
+  # On EVERY PULL (any target branch, unless you narrow it later)
   pull_request:
 
+# If you push again to the same PR/BRANCH, cancel the older in-progress CI workflow
 concurrency:
+  # unique key per workflow + BRANCH/REF so PR runs don't cancel each other wrongly
   group: ci-${{ github.workflow }}-${{ github.ref }}
+  # true = cancel outdated runs; saves minutes
   cancel-in-progress: true
 
+# All jobs live under this key
 jobs:
-  format:
-    name: Format
+  # Job id (used later as needs: detect-changes)
+  detect-changes:
+    # label shown in the UI
+    name: Detect changes
+    # VM image Github provides
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm ci
-      - run: npm run format:check
 
-  web-lint:
-    name: Web lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: apps/web/.nvmrc
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            apps/web/package-lock.json
-      - run: npm ci
-      - working-directory: apps/web
-        run: npm ci
-      - run: npm run lint:web
+    # Job-level outputs -> other jobs read: needs.detect-changes.outputs.run_web
+    outputs:
+      # Raw: did apps/web/** change?
+      web: ${{ steps.filter.outputs.web }}
+      # Raw: did apps/api/** change?
+      api: ${{ steps.filter.outputs.api }}
+      # Raw: did contracts/codegen change?
+      contracts: ${{ steps.filter.outputs.contracts }}
+      # Raw: did CI/root tooling change?
+      ci: ${{ steps.filter.outputs.ci }}
 
-  web-typecheck:
-    name: Web typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: apps/web/.nvmrc
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            apps/web/package-lock.json
-      - run: npm ci
-      - working-directory: apps/web
-        run: npm ci
-      - run: npm run typecheck:web
+      # Derived lane flags (what later jobs will use)
+      run_web: ${{ steps.flags.outputs.run_web }}
+      run_api: ${{ steps.flags.outputs.run_api }}
+      run_contracts: ${{ steps.flags.outputs.run_contracts }}
+      run_format: ${{ steps.flags.outputs.run_format }}
+      run_e2e: ${{ steps.flags.outputs.run_e2e }}
 
-  web-test:
-    name: Web test
-    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: apps/web/.nvmrc
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            apps/web/package-lock.json
-      - run: npm ci
-      - working-directory: apps/web
-        run: npm ci
-      - run: npm run test:web
+      # Clone the repo onto the runner so we can see changed files
+      - name: Checkout
+        uses: actions/checkout@v6
 
-  api-lint:
-    name: API lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      # Compare changed files to path globs; write true/false per filter name
+      - name: Path filter
+        id: filter
+        uses: dorny/paths-filter@v3
         with:
-          node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - uses: astral-sh/setup-uv@v8.3.0
-        with:
-          working-directory: apps/api
-      - run: npm ci
-      - run: npm run sync:api
-      - run: npm run lint:api:check
+          # YAML map: filter_name → list of git path patterns
+          filters: |
+            web:
+              - 'apps/web/**'
+            api:
+              - 'apps/api/**'
+            contracts:
+              - 'packages/api-contracts/**'
+              - 'scripts/codegen-contracts.mjs'
+            ci:
+              - '.github/workflows/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'prettier.config.mjs'
+              - '.prettierignore'
+              - '.husky/**'
 
-  api-typecheck:
-    name: API typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - uses: astral-sh/setup-uv@v8.3.0
-        with:
-          working-directory: apps/api
-      - run: npm ci
-      - run: npm run sync:api
-      - run: npm run typecheck:api
-
-  api-test:
-    name: API test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - uses: astral-sh/setup-uv@v8.3.0
-        with:
-          working-directory: apps/api
-      - run: npm ci
-      - run: npm run sync:api
-      - run: npm run test:api
-
-  contracts:
-    name: API contracts
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: apps/web/.nvmrc
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            apps/web/package-lock.json
-      - uses: astral-sh/setup-uv@v8.3.0
-        with:
-          working-directory: apps/api
-      - run: npm ci
-      - working-directory: apps/web
-        run: npm ci
-      - run: npm run sync:api
-      - run: npm run codegen:contracts:check
-      - run: npm run test:api:contracts
-
-  web-build:
-    name: Web build
-    needs: [format, web-lint, web-typecheck, web-test, contracts]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: apps/web/.nvmrc
-          cache: npm
-          cache-dependency-path: apps/web/package-lock.json
-      - working-directory: apps/web
-        run: npm ci
-      - working-directory: apps/web
-        env:
-          APP_ENV: production
-          NEXT_PUBLIC_APP_URL: http://localhost:3000
-          API_URL: http://127.0.0.1:8000
-          API_INTERNAL_SECRET: ci-build-placeholder-internal-secret
-          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder-anon-key
-          DB_PASSWORD: ci-build-placeholder
-        run: npm run build
+      # Apply fan-out rules: shared/contracts/ci can force web + api lanes
+      - name: Derive lane flags
+        id: flags
+        run: |
+          WEB='${{ steps.filter.outputs.web }}'
+          API='${{ steps.filter.outputs.api }}'
+          CONTRACTS='${{ steps.filter.outputs.contracts }}'
+          CI='${{ steps.filter.outputs.ci }}'
+          if [ "$WEB" = "true" ] || [ "$CONTRACTS" = "true" ] || [ "$CI" = "true" ]; then
+            RUN_WEB=true
+          else
+            RUN_WEB=false
+          fi
+          if [ "$API" = "true" ] || [ "$CONTRACTS" = "true" ] || [ "$CI" = "true" ]; then
+            RUN_API=true
+          else
+            RUN_API=false
+          fi
+          if [ "$CONTRACTS" = "true" ] || [ "$CI" = "true" ]; then
+            RUN_CONTRACTS=true
+          else
+            RUN_CONTRACTS=false
+          fi
+          if [ "$RUN_WEB" = "true" ] || [ "$RUN_API" = "true" ] || [ "$RUN_CONTRACTS" = "true" ]; then
+            RUN_FORMAT=true
+          else
+            RUN_FORMAT=false
+          fi
+          # Policy B: e2e follows web lane (includes contracts/ci via RUN_WEB)
+          if [ "$RUN_WEB" = "true" ]; then
+            RUN_E2E=true
+          else
+            RUN_E2E=false
+          fi
+          echo "run_web=$RUN_WEB" >> "$GITHUB_OUTPUT"
+          echo "run_api=$RUN_API" >> "$GITHUB_OUTPUT"
+          echo "run_contracts=$RUN_CONTRACTS" >> "$GITHUB_OUTPUT"
+          echo "run_format=$RUN_FORMAT" >> "$GITHUB_OUTPUT"
+          echo "run_e2e=$RUN_E2E" >> "$GITHUB_OUTPUT"
+          echo "filter web=$WEB api=$API contracts=$CONTRACTS ci=$CI"
+          echo "flags run_web=$RUN_WEB run_api=$RUN_API run_contracts=$RUN_CONTRACTS run_format=$RUN_FORMAT run_e2e=$RUN_E2E"
