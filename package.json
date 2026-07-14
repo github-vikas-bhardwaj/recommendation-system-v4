@@ -22,6 +22,7 @@
     "lint:api:check": "cd apps/api && uv run ruff check . && uv run ruff format --check .",
     "typecheck:api": "cd apps/api && uv run pyright",
     "test:api": "cd apps/api && uv run pytest",
+    "test:api:contracts": "cd apps/api && uv run pytest tests/test_contracts.py",
     "check:api": "npm run lint:api:check && npm run typecheck:api && npm run test:api",
     "test:web": "cd apps/web && npm run test:run",
     "test:e2e": "cd apps/web && npm run test:e2e",
@@ -30,8 +31,10 @@
     "lint:web:fix": "cd apps/web && npm run lint:fix",
     "typecheck:web": "cd apps/web && npm run typecheck",
     "check:web": "npm run lint:web && npm run typecheck:web && npm run test:web",
-    "check": "npm run format:check && npm run check:web && npm run check:api",
-    "check:push": "npm run check"
+    "check": "npm run format:check && npm run codegen:contracts:check && npm run check:web && npm run check:api",
+    "check:push": "npm run check",
+    "codegen:contracts": "node scripts/codegen-contracts.mjs",
+    "codegen:contracts:check": "npm run codegen:contracts && git diff --exit-code apps/web/lib/api/generated apps/api/schemas/generated"
   },
   "repository": {
     "type": "git",
@@ -60,7 +63,7 @@
       "bash -c 'cd apps/api && uv run ruff check --fix \"$@\"' _",
       "bash -c 'cd apps/api && uv run ruff format \"$@\"' _"
     ],
-    "*.{json,md,yml,yaml,ts}": "prettier --write",
+    "*.{json,md,yml,yaml,ts,js,mjs,cjs}": "prettier --write",
     "apps/web/**/*.{js,jsx,ts,tsx,mjs,cjs,css,md,json}": [
       "bash -c 'cd apps/web && npx eslint --fix \"$@\"' _",
       "prettier --write"

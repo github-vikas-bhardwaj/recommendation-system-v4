@@ -8,6 +8,7 @@ dependencies = [
     "fastapi==0.139.0",
     "langsmith==0.9.7",
     "pydantic-settings==2.14.2",
+    "pyjwt[crypto]>=2.13.0",
     "python-dotenv==1.2.2",
     "uvicorn==0.49.0",
 ]
@@ -18,6 +19,8 @@ dev = [
     "pytest==9.1.1",
     "ruff==0.15.20",
     "httpx2==2.5.0",
+    "jsonschema==4.26.0",
+    "datamodel-code-generator==0.68.1",
 ]
 
 [tool.ruff]
@@ -37,7 +40,7 @@ select = [
 ignore = []
 
 [tool.ruff.lint.isort]
-known-first-party = ["config", "schemas"]
+known-first-party = ["auth", "config", "schemas"]
 
 [tool.ruff.format]
 quote-style = "double"

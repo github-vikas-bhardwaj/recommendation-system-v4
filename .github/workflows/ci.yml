@@ -125,9 +125,31 @@ jobs:
       - run: npm run sync:api
       - run: npm run test:api
 
+  contracts:
+    name: API contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/web/package-lock.json
+      - uses: astral-sh/setup-uv@v8.3.0
+        with:
+          working-directory: apps/api
+      - run: npm ci
+      - working-directory: apps/web
+        run: npm ci
+      - run: npm run sync:api
+      - run: npm run codegen:contracts:check
+      - run: npm run test:api:contracts
+
   web-build:
     name: Web build
-    needs: [format, web-lint, web-typecheck, web-test]
+    needs: [format, web-lint, web-typecheck, web-test, contracts]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -143,6 +165,7 @@ jobs:
           APP_ENV: production
           NEXT_PUBLIC_APP_URL: http://localhost:3000
           API_URL: http://127.0.0.1:8000
+          API_INTERNAL_SECRET: ci-build-placeholder-internal-secret
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-build-placeholder-anon-key
           DB_PASSWORD: ci-build-placeholder

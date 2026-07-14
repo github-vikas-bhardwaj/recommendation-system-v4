@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { RecommendationPillList } from "@/app/components/recommendations/RecommendationPillList";
 import { RecommendationsHeader } from "@/app/components/recommendations/RecommendationsHeader";
 import { RecommendationsPageShell } from "@/app/components/recommendations/RecommendationsPageShell";
+import { fetchRecommendations } from "@/lib/api/recommendations";
 import { listWatchedShows } from "@/lib/watched/queries";
 
 export const metadata: Metadata = {
@@ -12,7 +13,10 @@ export const metadata: Metadata = {
 
 export default async function RecommendationsPage() {
   const watchedShows = await listWatchedShows();
-
+  const showIds = watchedShows.map((show) => show.id);
+  // ignore unused variable eslint rule
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const apiResult = await fetchRecommendations(showIds);
   return (
     <RecommendationsPageShell>
       <div className="mx-auto max-w-5xl space-y-8">

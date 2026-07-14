@@ -22,16 +22,21 @@ Python HTTP API for the recommendation system. Built with **FastAPI**, served by
 ```
 apps/api/
 ├── index.py                        # FastAPI app + routes
+├── auth/
+│   ├── dependencies.py             # require_authenticated_bff (Depends)
+│   ├── internal.py                 # X-Internal-Api-Key
+│   └── jwt.py                      # Bearer JWT via Supabase JWKS (ES256)
 ├── config/
 │   └── settings.py                 # Pydantic Settings (env vars)
 ├── schemas/
 │   ├── env/
 │   │   └── env.py                  # Env enum (local / production)
-│   └── requests/
-│       └── recommendation.py       # Request body schemas
+│   └── generated/                  # Pydantic from packages/api-contracts (DO NOT EDIT)
 ├── tests/
-│   ├── conftest.py                 # TestClient fixture
+│   ├── conftest.py                 # TestClient + auth fixtures
 │   ├── test_health.py
+│   ├── test_auth.py
+│   ├── test_contracts.py
 │   └── test_recommendations.py
 ├── pyproject.toml                  # deps + Ruff + Pyright + pytest config
 ├── uv.lock                         # lockfile (commit this)
@@ -41,13 +46,15 @@ apps/api/
 └── .venv/                          # local venv (gitignored)
 ```
 
+Contract source of truth: [`packages/api-contracts`](../../packages/api-contracts/README.md).
+
 ---
 
 ## Prerequisites
 
 - [uv](https://docs.astral.sh/uv/) package manager
 - Python **3.12.12** (managed by uv via `.python-version`)
-- [Node.js](https://nodejs.org/) (for monorepo git hooks at repo root)
+- [Node.js](https://nodejs.org/) (for monorepo git hooks + contract codegen at repo root)
 
 ## First-time setup
 
@@ -58,7 +65,7 @@ npm install
 npm run prepare
 npm run sync:api
 cp apps/api/.env.example apps/api/.env
-# Edit apps/api/.env — add LANGSMITH_API_KEY, etc.
+# Edit apps/api/.env — API_INTERNAL_SECRET, SUPABASE_URL, LANGSMITH_* as needed
 ```
 
 Or from `apps/api`:
@@ -163,23 +170,32 @@ Web frontend tests: [apps/web/README.md](../web/README.md#tests-vitest).
 
 1. Copy `.env.example` → `.env`
 2. `load_dotenv()` in `config/settings.py` loads vars into `os.environ`
-3. `Settings()` reads app config via Pydantic Settings (`ENV`, `LANGSMITH_*`)
+3. `Settings()` reads app config via Pydantic Settings
 
 ```env
 ENV=local
 LANGCHAIN_TRACING_V2=true
 LANGSMITH_API_KEY=ls_...
 LANGSMITH_PROJECT=recommendation-system-v4
+API_INTERNAL_SECRET=change-me-local-dev-secret
+SUPABASE_URL=https://<project-ref>.supabase.co
 ```
 
-`LANGCHAIN_TRACING_V2` is read by the LangSmith SDK from `os.environ`. `LANGSMITH_*` keys are loaded into `Settings`.
+| Variable | Purpose |
+|----------|---------|
+| `API_INTERNAL_SECRET` | Must match web `API_INTERNAL_SECRET` (`X-Internal-Api-Key`) |
+| `SUPABASE_URL` | Same project as web; used for JWKS + JWT issuer |
+
+`LANGCHAIN_TRACING_V2` is read by the LangSmith SDK from `os.environ`. Other keys load into `Settings`.
 
 ### Production
 
-No `.env` file on the server. Set the same variables on the host:
+No `.env` file on the server. Set the same variables on the host (Render):
 
 ```env
 ENV=production
+API_INTERNAL_SECRET=...
+SUPABASE_URL=https://<project-ref>.supabase.co
 LANGCHAIN_TRACING_V2=true
 LANGSMITH_API_KEY=...
 LANGSMITH_PROJECT=...
@@ -211,21 +227,37 @@ ENV=production uv run uvicorn index:app --reload
 
 ---
 
-## Request schemas (Pydantic)
+## Request / response contracts
 
-`schemas/requests/recommendation.py`:
+Bodies are defined in [`packages/api-contracts/schemas`](../../packages/api-contracts/README.md) and generated into `schemas/generated/`.
 
-```python
-class RecommendationRequest(BaseModel):
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
-    user_id: int = Field(alias="userId")
-    show_ids: list[str] = Field(alias="showIds")
+**Do not** hand-edit `schemas/generated/*`. Change the JSON Schema, then from repo root:
+
+```bash
+npm run codegen:contracts
 ```
 
-| Config | Purpose |
-|--------|---------|
-| `populate_by_name=True` | Accept `userId` or `user_id` in JSON |
-| `extra="forbid"` | Reject unknown fields (strict contract) |
+| Wire JSON | Python (generated) |
+|-----------|--------------------|
+| `{ "showIds": [1, 2, 3] }` | `RecommendationsRequest` |
+| `{ "recommendedShowIds": [123] }` | `RecommendationsResponse` |
+
+User identity is **not** in the request body — it comes from the JWT `sub` after auth.
+
+---
+
+## Authentication
+
+`GET /health` is public. `POST /recommendations` requires **both**:
+
+| Header | Env / source |
+|--------|----------------|
+| `X-Internal-Api-Key` | `API_INTERNAL_SECRET` (same value as web BFF) |
+| `Authorization: Bearer <token>` | Supabase user access token; verified via JWKS at `{SUPABASE_URL}/auth/v1/.well-known/jwks.json` (ES256) |
+
+Implemented in `auth/internal.py`, `auth/jwt.py`, and `auth/dependencies.py` (`Depends(require_authenticated_bff)`).
+
+Missing / invalid auth → **401**. Invalid body (after auth) → **422**.
 
 ---
 
@@ -242,12 +274,13 @@ curl http://127.0.0.1:8000/health
 ```bash
 curl -s -X POST http://127.0.0.1:8000/recommendations \
   -H "Content-Type: application/json" \
-  -d '{"userId": 1, "showIds": ["show-101", "show-202"]}'
+  -H "X-Internal-Api-Key: $API_INTERNAL_SECRET" \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -d '{"showIds": [1, 2, 3]}'
 ```
 
-Snake_case also works: `{"user_id": 1, "show_ids": [...]}`.
-
-Invalid body (wrong type, extra field) → **422** before your route runs.
+No headers / wrong key / missing Bearer → **401**.  
+Extra field or wrong types (with valid auth) → **422**.
 
 ---
 
@@ -278,9 +311,11 @@ Config in `pyproject.toml` under `[tool.pytest.ini_options]`.
 
 ```
 tests/
-├── conftest.py          # shared TestClient fixture
-├── test_health.py       # GET /health
-└── test_recommendations.py  # validation + happy path
+├── conftest.py              # TestClient + auth fixtures (mock JWT)
+├── test_health.py           # GET /health
+├── test_auth.py             # 401 cases + public health
+├── test_contracts.py        # JSON Schema ↔ Pydantic + route contract
+└── test_recommendations.py  # body validation with auth headers
 ```
 
 ### Commands
@@ -290,25 +325,26 @@ cd apps/api
 
 uv run pytest              # run all tests
 uv run pytest -v           # verbose
-uv run pytest tests/test_health.py   # single file
+uv run pytest tests/test_auth.py
 ```
 
 From repo root:
 
 ```bash
 npm run test:api
+npm run test:api:contracts
 ```
 
-Tests use FastAPI `TestClient` — **no running server required**.
+Tests use FastAPI `TestClient` — **no running server required**. Route auth tests stub JWT verification; internal-key checks are real.
 
 ### What is covered
 
-| Test | Asserts |
+| Area | Asserts |
 |------|---------|
-| `test_health_returns_200` | `/health` returns 200 |
-| `test_recommendations_valid_body` | valid JSON → 200 |
-| `test_recommendations_rejects_extra_field` | extra key → 422 (`extra="forbid"`) |
-| `test_recommendations_rejects_invalid_type` | wrong type → 422 |
+| Health | `/health` → 200 without auth |
+| Auth | missing key / wrong key / missing Bearer → 401 |
+| Body | valid → 200; extra field / bad types → 422 (with auth headers) |
+| Contracts | request/response schemas ↔ generated Pydantic |
 
 ---
 
@@ -493,6 +529,8 @@ Do **not** use `pip install -r requirements.txt` or `gunicorn your_application.w
 | Variable | Value |
 | -------- | ----- |
 | `ENV` | `production` |
+| `API_INTERNAL_SECRET` | Same shared secret as Vercel `API_INTERNAL_SECRET` |
+| `SUPABASE_URL` | Same project URL as web `NEXT_PUBLIC_SUPABASE_URL` |
 | `LANGSMITH_API_KEY` | your key (optional until LLM features) |
 | `LANGSMITH_PROJECT` | `recommendation-system-v4` |
 
@@ -505,6 +543,7 @@ After API is live, set on **Vercel** (web project):
 | Variable | Value |
 | -------- | ----- |
 | `API_URL` | `https://recommendation-system-v4.onrender.com` |
+| `API_INTERNAL_SECRET` | Same as Render |
 
 Redeploy web → `/health` should show `apiUrlConfigured: true`.
 

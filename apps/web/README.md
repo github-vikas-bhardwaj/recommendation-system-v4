@@ -45,9 +45,11 @@ Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **e
 | `APP_ENV`                       | `production`                                                                    |
 | `NEXT_PUBLIC_APP_URL`           | `https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app` |
 | `API_URL`                       | `https://recommendation-system-v4.onrender.com`                                 |
+| `API_INTERNAL_SECRET`           | Same shared secret as Render                                                    |
 | `NEXT_PUBLIC_SUPABASE_URL`      | `https://<project-ref>.supabase.co`                                             |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | from Supabase → Settings → API                                                  |
 | `DB_PASSWORD`                   | from Supabase → Settings → Database                                             |
+| `SUPABASE_SERVICE_ROLE_KEY`     | from Supabase → Settings → API (server-only)                                    |
 
 5. Verify `/` and `/health`
 6. If you change any `NEXT_PUBLIC_*` var, **redeploy** (baked at build time)
@@ -104,7 +106,7 @@ cp apps/web/.env.example apps/web/.env.local
 ```
 lib/env/
 ├── public.ts    # NEXT_PUBLIC_* — safe for client components
-├── server.ts    # API_URL, APP_ENV — server-only (import "server-only")
+├── server.ts    # API_URL, API_INTERNAL_SECRET, APP_ENV — server-only
 └── required.ts  # shared helper
 ```
 
@@ -113,11 +115,32 @@ lib/env/
 | `APP_ENV`                       | server                 | `local`                    |
 | `NEXT_PUBLIC_APP_URL`           | client                 | `http://localhost:3000`    |
 | `API_URL`                       | server (BFF → FastAPI) | `http://127.0.0.1:8000`    |
+| `API_INTERNAL_SECRET`           | server (BFF → FastAPI) | Same as `apps/api/.env`    |
 | `NEXT_PUBLIC_SUPABASE_URL`      | client                 | Supabase project URL       |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | client                 | Supabase anon key          |
 | `DB_PASSWORD`                   | server                 | Supabase database password |
+| `SUPABASE_SERVICE_ROLE_KEY`     | server                 | Supabase service role key  |
 
-**Rule:** never put `API_URL` or secrets in `NEXT_PUBLIC_*`.
+**Rule:** never put `API_URL`, `API_INTERNAL_SECRET`, or other secrets in `NEXT_PUBLIC_*`.
+
+## Calling the API (BFF)
+
+Browser never calls FastAPI. Server code uses `lib/api/recommendations.ts`:
+
+1. Reads Supabase session access token (`getAccessToken`)
+2. `POST {API_URL}/recommendations` with:
+   - `X-Internal-Api-Key: API_INTERNAL_SECRET`
+   - `Authorization: Bearer <access token>`
+   - body `{ showIds: number[] }` (contract)
+3. Validates response with generated Zod (`recommendedShowIds`)
+
+Contracts: [`packages/api-contracts`](../../packages/api-contracts/README.md). After changing schemas:
+
+```bash
+npm run codegen:contracts
+```
+
+Generated files: `lib/api/generated/` — **do not edit by hand**.
 
 Production values go in the **Vercel dashboard**, not in git.
 

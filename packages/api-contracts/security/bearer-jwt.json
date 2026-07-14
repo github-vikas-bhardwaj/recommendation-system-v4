@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "security.bearer-jwt",
+  "type": "object",
+  "description": "Supabase user access token (ES256). Issuer and JWKS URL are derived from SUPABASE_URL at runtime.",
+  "properties": {
+    "header": { "const": "Authorization" },
+    "scheme": { "const": "Bearer" },
+    "algorithm": { "const": "ES256" },
+    "jwksPath": { "const": "/auth/v1/.well-known/jwks.json" }
+  },
+  "required": ["header", "scheme", "algorithm", "jwksPath"],
+  "additionalProperties": false
+}

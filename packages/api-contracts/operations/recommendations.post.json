@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "operations.recommendations.post",
+  "method": "POST",
+  "path": "/recommendations",
+  "requestSchema": "../schemas/recommendations.request.json",
+  "responseSchema": "../schemas/recommendations.response.json",
+  "security": {
+    "allOf": [
+      { "$ref": "../security/internal-api-key.json" },
+      { "$ref": "../security/bearer-jwt.json" }
+    ]
+  },
+  "responses": {
+    "401": { "description": "Missing/invalid internal key or Bearer token" },
+    "422": { "description": "Invalid request body" },
+    "200": { "description": "Recommendations returned" }
+  }
+}
