@@ -40,16 +40,19 @@ Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **e
 3. **Node.js Version:** `22.x` in project settings
 4. Add env vars (**Production** + **Preview**), then deploy
 
-| Variable                        | Production example                                                              |
-| ------------------------------- | ------------------------------------------------------------------------------- |
-| `APP_ENV`                       | `production`                                                                    |
-| `NEXT_PUBLIC_APP_URL`           | `https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app` |
-| `API_URL`                       | `https://recommendation-system-v4.onrender.com`                                 |
-| `API_INTERNAL_SECRET`           | Same shared secret as Render                                                    |
-| `NEXT_PUBLIC_SUPABASE_URL`      | `https://<project-ref>.supabase.co`                                             |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | from Supabase → Settings → API                                                  |
-| `DB_PASSWORD`                   | from Supabase → Settings → Database                                             |
-| `SUPABASE_SERVICE_ROLE_KEY`     | from Supabase → Settings → API (server-only)                                    |
+| Variable                                              | Production example                                                              |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `APP_ENV`                                             | `production`                                                                    |
+| `NEXT_PUBLIC_APP_URL`                                 | `https://recommendation-system-v4-f4cef7rj5-vikas-projects-c7b4be85.vercel.app` |
+| `API_URL`                                             | `https://recommendation-system-v4.onrender.com`                                 |
+| `API_INTERNAL_SECRET`                                 | Same shared secret as Render                                                    |
+| `NEXT_PUBLIC_SENTRY_DSN`                              | From Sentry project **reelmind-web** (Settings → Client Keys)                   |
+| `SENTRY_DSN`                                          | Same DSN (optional; server falls back to `NEXT_PUBLIC_SENTRY_DSN`)              |
+| `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | Optional — source map upload on build                                           |
+| `NEXT_PUBLIC_SUPABASE_URL`                            | `https://<project-ref>.supabase.co`                                             |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`                       | from Supabase → Settings → API                                                  |
+| `DB_PASSWORD`                                         | from Supabase → Settings → Database                                             |
+| `SUPABASE_SERVICE_ROLE_KEY`                           | from Supabase → Settings → API (server-only)                                    |
 
 5. Verify `/` and `/health`
 6. If you change any `NEXT_PUBLIC_*` var, **redeploy** (baked at build time)
