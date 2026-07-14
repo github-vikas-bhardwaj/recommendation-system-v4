@@ -21,6 +21,7 @@ jobs:
       APP_ENV: local
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       API_URL: http://127.0.0.1:8000
+      API_INTERNAL_SECRET: ci-e2e-placeholder-internal-secret
       DB_PASSWORD: ci-build-placeholder
     steps:
       - uses: actions/checkout@v6
