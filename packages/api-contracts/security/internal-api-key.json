@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "security.internal-api-key",
+  "type": "object",
+  "description": "Shared secret between BFF and API",
+  "properties": {
+    "header": { "const": "X-Internal-Api-Key" },
+    "type": { "const": "sharedSecret" }
+  },
+  "required": ["header", "type"],
+  "additionalProperties": false
+}

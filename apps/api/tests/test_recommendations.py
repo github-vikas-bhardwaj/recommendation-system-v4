@@ -1,26 +1,32 @@
-def test_recommendations_valid_body(client):
+VALID_REQUEST = {"showIds": [1, 2, 3]}
+
+
+def test_recommendations_valid_body(client, auth_headers):
     response = client.post(
         "/recommendations",
-        json={"userId": 1, "showIds": ["show-101", "show-202"]},
+        json=VALID_REQUEST,
+        headers=auth_headers,
     )
 
     assert response.status_code == 200
-    assert response.json() == {"message": "Recommendations"}
+    assert response.json() == {"recommendedShowIds": [123, 456, 789]}
 
 
-def test_recommendations_rejects_extra_field(client):
+def test_recommendations_rejects_extra_field(client, auth_headers):
     response = client.post(
         "/recommendations",
-        json={"userId": 1, "showIds": [], "hack": True},
+        json={"showIds": [1], "hack": True},
+        headers=auth_headers,
     )
 
     assert response.status_code == 422
 
 
-def test_recommendations_rejects_invalid_type(client):
+def test_recommendations_rejects_invalid_type(client, auth_headers):
     response = client.post(
         "/recommendations",
-        json={"userId": "not-a-number", "showIds": []},
+        json={"showIds": ["not-a-number"]},
+        headers=auth_headers,
     )
 
     assert response.status_code == 422

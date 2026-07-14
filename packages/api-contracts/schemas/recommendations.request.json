@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "recommendations.request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["showIds"],
+  "properties": {
+    "showIds": {
+      "type": "array",
+      "items": { "type": "integer" },
+      "minItems": 1
+    }
+  }
+}

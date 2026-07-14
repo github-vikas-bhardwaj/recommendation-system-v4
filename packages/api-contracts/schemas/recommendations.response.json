@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "recommendations.response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["recommendedShowIds"],
+  "properties": {
+    "recommendedShowIds": {
+      "type": "array",
+      "items": { "type": "integer" }
+    }
+  }
+}

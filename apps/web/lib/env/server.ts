@@ -12,4 +12,5 @@ export const serverEnv = {
   dbPassword: required("DB_PASSWORD"),
   isLocal: appEnv === "local",
   isProduction: appEnv === "production",
+  apiInternalSecret: required("API_INTERNAL_SECRET"),
 } as const;

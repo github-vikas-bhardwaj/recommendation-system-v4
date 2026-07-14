@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     env: Env = Env.LOCAL
     langsmith_api_key: str = ""
     langsmith_project: str = ""
+    api_internal_secret: str = ""
+    supabase_url: str = ""
 
     @property
     def is_local(self) -> bool:

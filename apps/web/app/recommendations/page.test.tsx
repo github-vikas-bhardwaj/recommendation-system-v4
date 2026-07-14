@@ -32,6 +32,12 @@ vi.mock("@/lib/watched/queries", () => ({
   listWatchedShows: vi.fn(async () => [sampleShow]),
 }));
 
+vi.mock("@/lib/api/recommendations", () => ({
+  fetchRecommendations: vi.fn(async () => ({
+    recommendedShowIds: [123, 456],
+  })),
+}));
+
 import RecommendationsPage from "./page";
 
 describe("Recommendations page", () => {

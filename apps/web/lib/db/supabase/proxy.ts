@@ -33,5 +33,6 @@ export async function updateSession(request: NextRequest): Promise<{
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   return { supabase, response: supabaseResponse, user };
 }

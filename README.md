@@ -9,6 +9,10 @@ recommendation-system-v4/
 ├── apps/
 │   ├── api/                    # Python API (FastAPI + Uvicorn)
 │   └── web/                    # Next.js frontend (BFF)
+├── packages/
+│   └── api-contracts/          # JSON Schema + operations/security (shared contract)
+├── scripts/
+│   └── codegen-contracts.mjs   # Generate TS + Pydantic from schemas
 ├── .github/workflows/          # GitHub Actions CI
 ├── .husky/                     # Git hooks (pre-commit, pre-push, commit-msg)
 ├── .nvmrc                      # Node 22.22.1 — local dev pin (see Node version strategy)
@@ -29,6 +33,10 @@ recommendation-system-v4/
 | ------- | -------------------------------------------------------------------------------- | ---------------------------------------- |
 | **api** | Python 3.12, FastAPI, Uvicorn, uv, Pydantic, LangSmith, Ruff, Pyright, pytest    | [apps/api/README.md](apps/api/README.md) |
 | **web** | Next.js 16, React 19, Tailwind CSS 4, ESLint, `tsc`, Vitest, Prettier (via root) | [apps/web/README.md](apps/web/README.md) |
+
+| Package           | Role                                                           | Docs                                                                 |
+| ----------------- | -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **api-contracts** | Shared JSON Schema, security, and operation docs for BFF ↔ API | [packages/api-contracts/README.md](packages/api-contracts/README.md) |
 
 ## Quick start
 
@@ -96,11 +104,40 @@ When bumping Node intentionally: update **both** `.nvmrc` files, then retest CI 
 
 - **Exact version pinning** for Python and dependencies (`==` in `pyproject.toml` + `uv.lock`).
 - **Explicit upgrade windows** — bump Python/deps intentionally, retest, refresh lockfile.
-- **Strict API contracts** — Pydantic request schemas with `extra="forbid"`.
-- **Environment-aware behavior** — local vs production via `ENV` and Pydantic Settings.
+- **Contract-first BFF ↔ API** — JSON Schema in `packages/api-contracts`; generate TS + Pydantic; CI drift check.
+- **Browser never calls the API** — Next.js BFF uses `API_URL` + `API_INTERNAL_SECRET` server-only.
+- **Dual authentication** — `X-Internal-Api-Key` (service) + Supabase Bearer JWT / JWKS ES256 (user `sub`).
+- **Environment-aware behavior** — local vs production via `ENV` / `APP_ENV` and settings.
 - **Git discipline** — branch naming, conventional commits, pre-commit + pre-push hooks.
 - **Static typing** — Pyright (API), `tsc` (web).
-- **Monorepo scripts at root** — `dev`, `check`, `format` mirror the API pattern.
+- **Monorepo scripts at root** — `dev`, `check`, `format`, `codegen:contracts`.
+
+## BFF ↔ API (local)
+
+```
+Browser → Next.js (apps/web)
+              │  server-only
+              │  X-Internal-Api-Key + Authorization: Bearer <supabase access token>
+              ▼
+         FastAPI (apps/api)
+              │  verify internal secret + JWT (JWKS)
+              ▼
+         POST /recommendations
+```
+
+| Variable                 | Web (`apps/web/.env.local`)             | API (`apps/api/.env`) |
+| ------------------------ | --------------------------------------- | --------------------- |
+| `API_URL`                | `http://127.0.0.1:8000`                 | —                     |
+| `API_INTERNAL_SECRET`    | **same value**                          | **same value**        |
+| `SUPABASE_URL`           | via `NEXT_PUBLIC_SUPABASE_URL` (client) | Project URL for JWKS  |
+| `NEXT_PUBLIC_SUPABASE_*` | required                                | —                     |
+
+```bash
+npm run codegen:contracts        # regenerate TS + Pydantic from packages/api-contracts
+npm run codegen:contracts:check  # fail if generated output drifts
+```
+
+See [packages/api-contracts/README.md](packages/api-contracts/README.md).
 
 ## Tooling overview
 
@@ -138,6 +175,7 @@ Runs on every `git push`:
 ```bash
 npm run check:push   # same as npm run check
   ├── format:check
+  ├── codegen:contracts:check
   ├── check:web      # ESLint + tsc + Vitest
   └── check:api      # Ruff + Pyright + pytest
 ```
@@ -257,17 +295,18 @@ Workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 
 Runs on **pull requests** and **pushes to `main`**. Quality jobs run **in parallel**; **Web build** runs after format + web checks pass; **CI complete** runs last and gates Vercel deploys.
 
-| Job               | Command                                                         |
-| ----------------- | --------------------------------------------------------------- |
-| **Format**        | `npm run format:check`                                          |
-| **Web lint**      | `npm run lint:web`                                              |
-| **Web typecheck** | `npm run typecheck:web`                                         |
-| **Web test**      | `npm run test:web`                                              |
-| **API lint**      | `npm run lint:api:check`                                        |
-| **API typecheck** | `npm run typecheck:api`                                         |
-| **API test**      | `npm run test:api`                                              |
-| **Web build**     | `next build` (needs: Format, Web lint, Web typecheck, Web test) |
-| **CI complete**   | Fails if any job above failed — **Vercel Deployment Check**     |
+| Job               | Command                                                                     |
+| ----------------- | --------------------------------------------------------------------------- |
+| **Format**        | `npm run format:check`                                                      |
+| **Web lint**      | `npm run lint:web`                                                          |
+| **Web typecheck** | `npm run typecheck:web`                                                     |
+| **Web test**      | `npm run test:web`                                                          |
+| **API lint**      | `npm run lint:api:check`                                                    |
+| **API typecheck** | `npm run typecheck:api`                                                     |
+| **API test**      | `npm run test:api`                                                          |
+| **API contracts** | `codegen:contracts:check` + `test:api:contracts`                            |
+| **Web build**     | `next build` (needs: format, web checks, **contracts**)                     |
+| **CI complete**   | Fails if any job above failed — **Vercel Deployment Check** (if configured) |
 
 **Branch protection (recommended):** require **CI complete** before merging to `main`.
 
@@ -313,7 +352,12 @@ GitHub (main)
     └── Render  → apps/api  → FastAPI (not exposed to browser directly)
 ```
 
-Web calls API server-side via `API_URL` (BFF). Never put `API_URL` in `NEXT_PUBLIC_*`.
+Web calls API server-side via `API_URL` (BFF). Never put `API_URL` or `API_INTERNAL_SECRET` in `NEXT_PUBLIC_*`.
+
+Protected API routes require:
+
+1. Matching `API_INTERNAL_SECRET` on Vercel and Render (`X-Internal-Api-Key`)
+2. Valid Supabase user JWT (`Authorization: Bearer …`), verified on the API via JWKS from `SUPABASE_URL`
 
 ### Vercel (web)
 
@@ -333,9 +377,11 @@ Web calls API server-side via `API_URL` (BFF). Never put `API_URL` in `NEXT_PUBL
 | `APP_ENV`                       | `production`                                        |
 | `NEXT_PUBLIC_APP_URL`           | Your Vercel production URL                          |
 | `API_URL`                       | Your Render API URL                                 |
+| `API_INTERNAL_SECRET`           | Shared secret (same value as Render)                |
 | `NEXT_PUBLIC_SUPABASE_URL`      | Supabase → Project Settings → API → Project URL     |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API → anon/public key |
 | `DB_PASSWORD`                   | Supabase → Project Settings → Database → password   |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase → Project Settings → API (server-only)     |
 
 Apply to **Production** and **Preview**, then **redeploy** (`NEXT_PUBLIC_*` is baked at build time).
 
@@ -365,11 +411,13 @@ Details: [apps/web/README.md](apps/web/README.md#deploy-vercel).
 
 **Environment variables:**
 
-| Variable            | Value                                  |
-| ------------------- | -------------------------------------- |
-| `ENV`               | `production`                           |
-| `LANGSMITH_API_KEY` | your key (optional until LLM features) |
-| `LANGSMITH_PROJECT` | `recommendation-system-v4`             |
+| Variable              | Value                                  |
+| --------------------- | -------------------------------------- |
+| `ENV`                 | `production`                           |
+| `API_INTERNAL_SECRET` | Same shared secret as Vercel           |
+| `SUPABASE_URL`        | Same as web `NEXT_PUBLIC_SUPABASE_URL` |
+| `LANGSMITH_API_KEY`   | your key (optional until LLM features) |
+| `LANGSMITH_PROJECT`   | `recommendation-system-v4`             |
 
 Details: [apps/api/README.md](apps/api/README.md#deploy-render).
 
