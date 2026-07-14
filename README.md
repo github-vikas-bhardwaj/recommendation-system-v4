@@ -168,26 +168,29 @@ Runs on every `git commit`:
 3. **lint-staged** — auto-fix staged files (see below)
 4. **`npm run format:check`** — Prettier on whole repo
 
-### Pre-push (`.husky/pre-push`) — full gate
+### Pre-push (`.husky/pre-push`) — path-aware, lighter than CI
 
-Runs on every `git push`:
+Runs on every `git push`. Mirrors CI **lanes** for changed files only (does **not** run Playwright or `next build` locally):
+
+1. Diff commits you are pushing (upstream / `origin/main` / last commit)
+2. If **contracts** / shared tooling changed → `codegen:contracts:check` (+ both app lanes)
+3. If **web** (or shared) → `npm run check:web` (ESLint + tsc + Vitest)
+4. If **api** (or shared) → `npm run check:api` (Ruff + Pyright + pytest)
+
+Full monorepo gate (optional, manual):
 
 ```bash
-npm run check:push   # same as npm run check
-  ├── format:check
-  ├── codegen:contracts:check
-  ├── check:web      # ESLint + tsc + Vitest
-  └── check:api      # Ruff + Pyright + pytest
+npm run check
 ```
 
-Hooks are local-only (`git commit --no-verify` / `--no-verify` on push skips them). **CI is the remote safety net.**
+Hooks are local-only (`git commit --no-verify` / `--no-verify` on push skips them). **GitHub `CI OK` is the merge / deploy safety net** (includes e2e + web build).
 
 ### lint-staged (on commit)
 
 | Glob                                                | Tools                          |
 | --------------------------------------------------- | ------------------------------ |
 | `apps/api/**/*.py`                                  | Ruff check --fix → Ruff format |
-| `*.{json,md,yml,yaml,ts}` (repo root)               | Prettier write                 |
+| `*.{json,md,yml,yaml,ts,js,mjs,cjs}` (repo root)    | Prettier write                 |
 | `apps/web/**/*.{js,jsx,ts,tsx,mjs,cjs,css,md,json}` | ESLint --fix → Prettier write  |
 
 Dry-run without committing:
@@ -263,25 +266,25 @@ release/0.0.3
 
 ### Quality
 
-| Script                     | What it does                                       |
-| -------------------------- | -------------------------------------------------- |
-| `npm run format`           | Prettier write (root + web)                        |
-| `npm run format:check`     | Prettier check only                                |
-| `npm run lint:api`         | Ruff fix + format on all API files                 |
-| `npm run lint:api:check`   | Ruff check + format check (API)                    |
-| `npm run typecheck:api`    | Pyright                                            |
-| `npm run test:api`         | pytest                                             |
-| `npm run test:web`         | Vitest (`apps/web`)                                |
-| `npm run test:e2e`         | Playwright E2E (`apps/web`, http://localhost:3001) |
-| `npm run check:api`        | `lint:api:check` + `typecheck:api` + `test:api`    |
-| `npm run lint:web`         | ESLint (`apps/web`)                                |
-| `npm run lint:web:fix`     | ESLint with `--fix`                                |
-| `npm run typecheck:web`    | `tsc --noEmit` (`apps/web`)                        |
-| `npm run check:web`        | ESLint + typecheck + Vitest                        |
-| `npm run check`            | `format:check` + `check:web` + `check:api`         |
-| `npm run check:push`       | Alias for `check` (pre-push hook)                  |
-| `npm run validate:runtime` | Node + Python version check                        |
-| `npm run validate:branch`  | Branch name check only                             |
+| Script                     | What it does                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| `npm run format`           | Prettier write (root + web)                                                                |
+| `npm run format:check`     | Prettier check only                                                                        |
+| `npm run lint:api`         | Ruff fix + format on all API files                                                         |
+| `npm run lint:api:check`   | Ruff check + format check (API)                                                            |
+| `npm run typecheck:api`    | Pyright                                                                                    |
+| `npm run test:api`         | pytest                                                                                     |
+| `npm run test:web`         | Vitest (`apps/web`)                                                                        |
+| `npm run test:e2e`         | Playwright E2E locally (`apps/web`, port 3001); CI runs this in the **Playwright E2E** job |
+| `npm run check:api`        | `lint:api:check` + `typecheck:api` + `test:api`                                            |
+| `npm run lint:web`         | ESLint (`apps/web`)                                                                        |
+| `npm run lint:web:fix`     | ESLint with `--fix`                                                                        |
+| `npm run typecheck:web`    | `tsc --noEmit` (`apps/web`)                                                                |
+| `npm run check:web`        | ESLint + typecheck + Vitest                                                                |
+| `npm run check`            | Full local gate: format + contracts codegen + web + api (no e2e / no next build)           |
+| `npm run check:push`       | Same as pre-push hook (path-aware lanes)                                                   |
+| `npm run validate:runtime` | Node + Python version check                                                                |
+| `npm run validate:branch`  | Branch name check only                                                                     |
 
 ### Setup
 
@@ -293,22 +296,57 @@ release/0.0.3
 
 Workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 
-Runs on **pull requests** and **pushes to `main`**. Quality jobs run **in parallel**; **Web build** runs after format + web checks pass; **CI complete** runs last and gates Vercel deploys.
+Runs on **pull requests** and **pushes to `main`**.
 
-| Job               | Command                                                                     |
-| ----------------- | --------------------------------------------------------------------------- |
-| **Format**        | `npm run format:check`                                                      |
-| **Web lint**      | `npm run lint:web`                                                          |
-| **Web typecheck** | `npm run typecheck:web`                                                     |
-| **Web test**      | `npm run test:web`                                                          |
-| **API lint**      | `npm run lint:api:check`                                                    |
-| **API typecheck** | `npm run typecheck:api`                                                     |
-| **API test**      | `npm run test:api`                                                          |
-| **API contracts** | `codegen:contracts:check` + `test:api:contracts`                            |
-| **Web build**     | `next build` (needs: format, web checks, **contracts**)                     |
-| **CI complete**   | Fails if any job above failed — **Vercel Deployment Check** (if configured) |
+### Lanes (path filters)
 
-**Branch protection (recommended):** require **CI complete** before merging to `main`.
+A **Detect changes** job classifies the diff, then only the relevant lanes run:
+
+| Flag / lane     | Typical paths                                                | Jobs                                             |
+| --------------- | ------------------------------------------------------------ | ------------------------------------------------ |
+| **Web**         | `apps/web/**` (also forced by contracts / CI tooling)        | Web lint, typecheck, test, build, Playwright E2E |
+| **API**         | `apps/api/**` (also forced by contracts / CI tooling)        | API lint, typecheck, test                        |
+| **Contracts**   | `packages/api-contracts/**`, `scripts/codegen-contracts.mjs` | Codegen drift check + `test:api:contracts`       |
+| **Format**      | When any of the above lanes run                              | `format:check`                                   |
+| **CI / shared** | `.github/workflows/**`, root `package.json`, Prettier, Husky | Fan-out: web + api + contracts                   |
+
+Examples:
+
+- Only `apps/web/...` → web lane (+ format, e2e, web-build); API jobs **skip**
+- Only `apps/api/...` → api lane (+ format); web + e2e **skip**
+- Contract schema change → contracts + **both** app lanes
+
+### Job graph
+
+```
+detect-changes
+     │
+     ├─ format (if needed)
+     ├─ web-lint │ web-typecheck │ web-test     (if run_web)
+     ├─ api-lint │ api-typecheck │ api-test     (if run_api)
+     ├─ contracts                               (if run_contracts)
+     │
+     └─ after web quality (+ contracts ok/skip):
+            web-build  ∥  Playwright E2E
+                 └──────────┬──────────┘
+                            ▼
+                         CI OK
+```
+
+| Job                             | What                                                               |
+| ------------------------------- | ------------------------------------------------------------------ |
+| **Detect changes**              | Path filters → `run_web` / `run_api` / `run_contracts` / `run_e2e` |
+| **Format**                      | `npm run format:check`                                             |
+| **Web lint / typecheck / test** | ESLint, `tsc`, Vitest                                              |
+| **API lint / typecheck / test** | Ruff, Pyright, pytest                                              |
+| **API contracts**               | `codegen:contracts:check` + contract pytest                        |
+| **Web build**                   | `next build` (sibling of e2e; does **not** wait on Playwright)     |
+| **Playwright E2E**              | `npm run test:e2e` in `apps/web` (after web unit gates)            |
+| **CI OK**                       | Merge / deploy gate — fails if any **required** lane failed        |
+
+**Branch protection (recommended):** require **`CI OK`** before merging to `main`.
+
+**Vercel Deployment Checks:** require **`CI OK`** (not individual lane jobs).
 
 ### Runtime versions in CI
 
@@ -317,7 +355,7 @@ Runs on **pull requests** and **pushes to `main`**. Quality jobs run **in parall
 | Node `22.22.1`   | `.nvmrc` via `node-version-file` in Actions      |
 | Python `3.12.12` | `apps/api/.python-version` via `setup-uv@v8.3.0` |
 
-CI pins **exact** Node locally in Actions; Vercel uses `engines` (`>=22.22.0`) instead — see [Node version strategy](#node-version-strategy).
+CI pins **exact** Node in Actions; Vercel uses `engines` (`>=22.22.0`) instead — see [Node version strategy](#node-version-strategy).
 
 ## Deployment
 
@@ -387,13 +425,13 @@ Apply to **Production** and **Preview**, then **redeploy** (`NEXT_PUBLIC_*` is b
 
 **Wait for CI before promoting deploys** (Vercel builds on push immediately; use Deployment Checks so production/preview only go live after GitHub CI passes):
 
-1. Push the `CI complete` job (see `.github/workflows/ci.yml`) — check name on GitHub: **`CI complete`**
+1. Ensure the **`CI OK`** job exists in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — check name on GitHub: **`CI OK`**
 2. Vercel → Project → **Settings → Git → Deployment Checks**
 3. Enable checks for **Production** (and **Preview** if desired)
-4. Add required check: **`CI complete`** (or `CI / CI complete` if the picker shows the workflow prefix)
+4. Add required check: **`CI OK`** (or `CI / CI OK` if the picker shows the workflow prefix)
 5. Save — Vercel will build on push but **hold promotion** until that check is green
 
-Optional (recommended): GitHub → **Settings → Branches** → `main` → require status check **`CI complete`** before merge.
+Optional (recommended): GitHub → **Settings → Branches** → `main` → require status check **`CI OK`** before merge.
 
 Docs: [Vercel Deployment Checks](https://vercel.com/docs/deployments/deployment-checks)
 

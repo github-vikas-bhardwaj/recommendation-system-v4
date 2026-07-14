@@ -1,4 +1,60 @@
 set -e
-echo "🔍 Running pre-push checks..."
 
-npm run check:push
+echo "🔍 Running pre-push checks (path-aware; full suite is CI)..."
+
+# Diff against upstream if set, else origin/main, else last commit
+if git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then
+  RANGE='@{u}...HEAD'
+elif git rev-parse --verify origin/main >/dev/null 2>&1; then
+  RANGE='origin/main...HEAD'
+else
+  RANGE='HEAD~1...HEAD'
+fi
+
+CHANGED="$(git diff --name-only "$RANGE" 2>/dev/null || true)"
+
+if [ -z "$CHANGED" ]; then
+  echo "No commits ahead of base — skipping package checks."
+  exit 0
+fi
+
+echo "Changed files vs $RANGE:"
+echo "$CHANGED" | sed 's/^/  /'
+
+RUN_WEB=false
+RUN_API=false
+RUN_CONTRACTS=false
+
+echo "$CHANGED" | grep -q '^apps/web/' && RUN_WEB=true
+echo "$CHANGED" | grep -q '^apps/api/' && RUN_API=true
+echo "$CHANGED" | grep -qE '^(packages/api-contracts/|scripts/codegen-contracts\.mjs)' && RUN_CONTRACTS=true
+
+# Shared / tooling changes fan out like CI (contracts + both apps)
+if echo "$CHANGED" | grep -qE '^(\.github/|package\.json|package-lock\.json|prettier\.config\.mjs|\.prettierignore|\.husky/)'; then
+  RUN_WEB=true
+  RUN_API=true
+  RUN_CONTRACTS=true
+fi
+
+if [ "$RUN_CONTRACTS" = true ]; then
+  RUN_WEB=true
+  RUN_API=true
+  echo "→ contracts lane: codegen:contracts:check"
+  npm run codegen:contracts:check
+fi
+
+if [ "$RUN_WEB" = true ]; then
+  echo "→ web lane: check:web"
+  npm run check:web
+fi
+
+if [ "$RUN_API" = true ]; then
+  echo "→ api lane: check:api"
+  npm run check:api
+fi
+
+if [ "$RUN_WEB" = false ] && [ "$RUN_API" = false ] && [ "$RUN_CONTRACTS" = false ]; then
+  echo "No web/api/contracts paths changed — local package checks skipped (CI still runs)."
+fi
+
+echo "✅ Pre-push local checks passed. Push continues; GitHub CI is the full gate (incl. e2e + build)."
