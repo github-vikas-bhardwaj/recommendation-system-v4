@@ -35,8 +35,17 @@ packages/api-contracts/
 **Response body** (`recommendations.response.json`):
 
 ```json
-{ "recommendedShowIds": [123, 456, 789] }
+{
+  "recommendations": [
+    { "showId": 123, "score": 98 },
+    { "showId": 456, "score": 91 }
+  ]
+}
 ```
+
+- `recommendations`: array of `{ showId, score }`
+- `showId`: integer show id
+- `score`: integer **0–100** (similarity percentage; not a `"98%"` string)
 
 ### Security (both required)
 

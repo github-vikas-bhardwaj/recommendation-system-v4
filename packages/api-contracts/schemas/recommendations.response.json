@@ -3,11 +3,26 @@
   "$id": "recommendations.response",
   "type": "object",
   "additionalProperties": false,
-  "required": ["recommendedShowIds"],
+  "required": ["recommendations"],
   "properties": {
-    "recommendedShowIds": {
+    "recommendations": {
       "type": "array",
-      "items": { "type": "integer" }
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["showId", "score"],
+        "properties": {
+          "showId": {
+            "type": "integer"
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Similarity as a percentage (0-100)."
+          }
+        }
+      }
     }
   }
 }

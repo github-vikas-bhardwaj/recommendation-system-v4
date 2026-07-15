@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import TypedDict
 
 from psycopg_pool import AsyncConnectionPool
 
@@ -8,14 +9,24 @@ DEFAULT_NEIGHBORS_PER_SEED = 2
 DEFAULT_LIMIT = 20
 
 
+class RecommendationItem(TypedDict):
+    showId: int
+    score: int
+
+
+def similarity_to_percent(score: float) -> int:
+    """Map cosine similarity (~0-1) to an integer percentage (0-100)."""
+    return max(0, min(100, round(score * 100)))
+
+
 async def recommend(
     pool: AsyncConnectionPool,
     show_ids: Sequence[int],
     *,
     neighbors_per_seed: int = DEFAULT_NEIGHBORS_PER_SEED,
     limit: int = DEFAULT_LIMIT,
-) -> list[int]:
-    """Per-watched top-k NN, merge by max score, return top ``limit`` show IDs."""
+) -> list[RecommendationItem]:
+    """Per-watched top-k NN, merge by max score, return top ``limit`` items."""
     if not show_ids or limit <= 0:
         return []
 
@@ -38,4 +49,10 @@ async def recommend(
             best_scores[neighbor_id] = score
 
     ranked = sorted(best_scores.items(), key=lambda item: item[1], reverse=True)
-    return [show_id for show_id, _score in ranked[:limit]]
+    return [
+        RecommendationItem(
+            showId=show_id,
+            score=similarity_to_percent(score),
+        )
+        for show_id, score in ranked[:limit]
+    ]

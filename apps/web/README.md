@@ -135,7 +135,7 @@ Browser never calls FastAPI. Server code uses `lib/api/recommendations.ts`:
    - `X-Internal-Api-Key: API_INTERNAL_SECRET`
    - `Authorization: Bearer <access token>`
    - body `{ showIds: number[] }` (contract)
-3. Validates response with generated Zod (`recommendedShowIds`)
+3. Validates response with generated Zod (`recommendations: [{ showId, score }]`)
 
 Contracts: [`packages/api-contracts`](../../packages/api-contracts/README.md). After changing schemas:
 

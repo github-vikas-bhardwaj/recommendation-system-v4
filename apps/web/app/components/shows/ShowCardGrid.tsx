@@ -5,6 +5,8 @@ import { ShowCard } from "./ShowCard";
 type ShowCardGridProps = {
   shows: Show[];
   watchedShowIds: ReadonlySet<number>;
+  /** Optional match scores keyed by show id (0–100). */
+  matchScoresById?: ReadonlyMap<number, number>;
   emptyTitle?: string;
   emptyDescription?: string;
 };
@@ -12,6 +14,7 @@ type ShowCardGridProps = {
 export function ShowCardGrid({
   shows,
   watchedShowIds,
+  matchScoresById,
   emptyTitle = "No shows found",
   emptyDescription = "Try a different search term or browse all shows.",
 }: ShowCardGridProps) {
@@ -31,6 +34,7 @@ export function ShowCardGrid({
           key={show.id}
           show={show}
           initialWatched={watchedShowIds.has(show.id)}
+          matchScore={matchScoresById?.get(show.id)}
         />
       ))}
     </div>

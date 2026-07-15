@@ -22,7 +22,7 @@ export async function fetchRecommendations(
 ): Promise<RecommendationsResponse> {
   if (showIds.length === 0) {
     return recommendationResponseSchema.parse({
-      recommendedShowIds: [],
+      recommendations: [],
     });
   }
 

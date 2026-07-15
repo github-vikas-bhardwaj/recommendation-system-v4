@@ -94,6 +94,7 @@ for (const schemaFile of schemaFiles) {
   const relativeSchemaFromApi = path.relative(apiDir, schemaPath);
   const relativePythonOutput = path.relative(apiDir, pythonOutput);
 
+  // Prefer Annotated + Field constraints over conint()/constr() (pyright-safe).
   run(
     [
       "uv run datamodel-codegen",
@@ -105,6 +106,8 @@ for (const schemaFile of schemaFiles) {
       "--snake-case-field",
       "--allow-population-by-field-name",
       "--disable-timestamp",
+      "--field-constraints",
+      "--use-annotated",
       "--formatters builtin",
     ].join(" "),
     apiDir,

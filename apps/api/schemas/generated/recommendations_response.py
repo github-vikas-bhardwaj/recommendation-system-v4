@@ -3,7 +3,20 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class Recommendation(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+    )
+    show_id: Annotated[int, Field(alias="showId")]
+    score: Annotated[
+        int, Field(description="Similarity as a percentage (0-100).", ge=0, le=100)
+    ]
 
 
 class RecommendationsResponse(BaseModel):
@@ -11,4 +24,4 @@ class RecommendationsResponse(BaseModel):
         extra="forbid",
         populate_by_name=True,
     )
-    recommended_show_ids: list[int] = Field(..., alias="recommendedShowIds")
+    recommendations: list[Recommendation]
