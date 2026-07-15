@@ -1,7 +1,6 @@
 import { SkeletonBlock } from "@/app/components/ui/SkeletonBlock";
 
 import { RecommendationPillSkeleton } from "./RecommendationPillSkeleton";
-import { RecommendedShowsSkeleton } from "./RecommendedShowsSkeleton";
 
 const PILL_SKELETON_COUNT = 10;
 
@@ -34,11 +33,14 @@ export function RecommendationsPageSkeleton() {
       </section>
 
       <section className="space-y-4">
-        <div className="space-y-2">
-          <SkeletonBlock className="h-4 w-16" />
-          <SkeletonBlock className="h-4 w-64 max-w-full" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-2">
+            <SkeletonBlock className="h-4 w-16" />
+            <SkeletonBlock className="h-4 w-64 max-w-full" />
+          </div>
+          <SkeletonBlock className="h-11 w-full rounded-full sm:w-48" />
         </div>
-        <RecommendedShowsSkeleton />
+        <SkeletonBlock className="h-4 w-72 max-w-full" />
       </section>
     </div>
   );
