@@ -5,16 +5,21 @@ import { ShowCard } from "./ShowCard";
 type ShowCardGridProps = {
   shows: Show[];
   watchedShowIds: ReadonlySet<number>;
+  emptyTitle?: string;
+  emptyDescription?: string;
 };
 
-export function ShowCardGrid({ shows, watchedShowIds }: ShowCardGridProps) {
+export function ShowCardGrid({
+  shows,
+  watchedShowIds,
+  emptyTitle = "No shows found",
+  emptyDescription = "Try a different search term or browse all shows.",
+}: ShowCardGridProps) {
   if (shows.length === 0) {
     return (
       <div className="card-surface rounded-2xl px-6 py-16 text-center">
-        <p className="text-lg font-medium text-white">No shows found</p>
-        <p className="mt-2 text-sm text-zinc-400">
-          Try a different search term or browse all shows.
-        </p>
+        <p className="text-lg font-medium text-white">{emptyTitle}</p>
+        <p className="mt-2 text-sm text-zinc-400">{emptyDescription}</p>
       </div>
     );
   }

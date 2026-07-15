@@ -1,3 +1,6 @@
+from collections.abc import Iterator
+from unittest.mock import MagicMock
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -9,8 +12,20 @@ TEST_USER_ID = "user-test-id"
 
 
 @pytest.fixture
-def client() -> TestClient:
-    return TestClient(app)
+def client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+    fake_pool = MagicMock()
+
+    async def fake_open_pool():
+        return fake_pool
+
+    async def fake_close_pool():
+        return None
+
+    monkeypatch.setattr("index.open_pool", fake_open_pool)
+    monkeypatch.setattr("index.close_pool", fake_close_pool)
+
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 @pytest.fixture

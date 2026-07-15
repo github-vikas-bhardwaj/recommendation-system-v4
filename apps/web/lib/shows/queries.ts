@@ -52,6 +52,36 @@ export async function getShowById(id: number): Promise<Show | null> {
   return mapShowRow(data as ShowRow);
 }
 
+/** Fetch shows by IDs, preserving the input order (missing IDs are skipped). */
+export async function getShowsByIds(ids: number[]): Promise<Show[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const uniqueIds = [...new Set(ids)];
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("shows")
+    .select("*")
+    .in("id", uniqueIds);
+
+  if (error) {
+    throw new ShowsQueryError(error.message);
+  }
+
+  const byId = new Map(
+    (data ?? []).map((row) => {
+      const show = mapShowRow(row as ShowRow);
+      return [show.id, show] as const;
+    }),
+  );
+
+  return ids.flatMap((id) => {
+    const show = byId.get(id);
+    return show ? [show] : [];
+  });
+}
+
 type ListShowsOptions = {
   query?: string;
   page?: number;

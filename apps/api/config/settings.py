@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     langsmith_project: str = ""
     api_internal_secret: str = ""
     supabase_url: str = ""
+    database_url: str = ""
 
     @property
     def is_local(self) -> bool:
