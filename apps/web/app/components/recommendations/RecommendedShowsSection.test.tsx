@@ -22,7 +22,14 @@ const recommendedShow: Show = {
 };
 
 vi.mock("next/image", () => ({
-  default: (props: ImgHTMLAttributes<HTMLImageElement>) => (
+  default: ({
+    fill: _fill,
+    priority: _priority,
+    ...props
+  }: ImgHTMLAttributes<HTMLImageElement> & {
+    fill?: boolean;
+    priority?: boolean;
+  }) => (
     // eslint-disable-next-line @next/next/no-img-element
     <img {...props} alt={props.alt} />
   ),
@@ -30,7 +37,7 @@ vi.mock("next/image", () => ({
 
 vi.mock("@/lib/api/recommendations", () => ({
   fetchRecommendations: vi.fn(async () => ({
-    recommendedShowIds: [123],
+    recommendations: [{ showId: 123, score: 94 }],
   })),
 }));
 
@@ -51,6 +58,9 @@ describe("RecommendedShowsSection", () => {
     expect(
       screen.getByRole("heading", { name: "Breaking Bad" }),
     ).toBeInTheDocument();
+    expect(screen.getByLabelText(/match score 94 percent/i)).toHaveTextContent(
+      "94%",
+    );
   });
 
   it("shows empty state when there are no seed shows", async () => {

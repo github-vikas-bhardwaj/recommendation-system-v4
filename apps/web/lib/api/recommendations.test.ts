@@ -26,7 +26,7 @@ describe("fetchRecommendations", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(fetchRecommendations([])).resolves.toEqual({
-      recommendedShowIds: [],
+      recommendations: [],
     });
     expect(fetchMock).not.toHaveBeenCalled();
     expect(getAccessToken).not.toHaveBeenCalled();
@@ -34,12 +34,20 @@ describe("fetchRecommendations", () => {
 
   it("POSTs showIds with internal key and bearer token", async () => {
     const fetchMock = vi.fn(async () =>
-      Response.json({ recommendedShowIds: [10, 20] }),
+      Response.json({
+        recommendations: [
+          { showId: 10, score: 98 },
+          { showId: 20, score: 91 },
+        ],
+      }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(fetchRecommendations([1, 2])).resolves.toEqual({
-      recommendedShowIds: [10, 20],
+      recommendations: [
+        { showId: 10, score: 98 },
+        { showId: 20, score: 91 },
+      ],
     });
 
     expect(fetchMock).toHaveBeenCalledWith(

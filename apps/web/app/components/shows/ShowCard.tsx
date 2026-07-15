@@ -9,9 +9,11 @@ import { WatchedToggle } from "./WatchedToggle";
 type ShowCardProps = {
   show: Show;
   initialWatched: boolean;
+  /** Similarity percentage (0–100). Shown as a badge on the poster when set. */
+  matchScore?: number;
 };
 
-export function ShowCard({ show, initialWatched }: ShowCardProps) {
+export function ShowCard({ show, initialWatched, matchScore }: ShowCardProps) {
   const summary = stripHtml(show.summary);
   const detailHref = `/shows/${show.id}`;
 
@@ -24,6 +26,14 @@ export function ShowCard({ show, initialWatched }: ShowCardProps) {
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover transition duration-500 group-hover:scale-105"
         />
+        {matchScore != null ? (
+          <span
+            className="absolute top-3 right-3 z-10 rounded-full bg-black/70 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm"
+            aria-label={`Match score ${matchScore} percent`}
+          >
+            {matchScore}%
+          </span>
+        ) : null}
         <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent p-4 pt-16">
           <div className="flex flex-wrap gap-1.5">
             {show.genres.slice(0, 2).map((genre) => (

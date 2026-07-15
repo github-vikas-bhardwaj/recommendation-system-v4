@@ -240,7 +240,7 @@ npm run codegen:contracts
 | Wire JSON | Python (generated) |
 |-----------|--------------------|
 | `{ "showIds": [1, 2, 3] }` | `RecommendationsRequest` |
-| `{ "recommendedShowIds": [123] }` | `RecommendationsResponse` |
+| `{ "recommendations": [{ "showId": 123, "score": 98 }] }` | `RecommendationsResponse` |
 
 User identity is **not** in the request body — it comes from the JWT `sub` after auth.
 

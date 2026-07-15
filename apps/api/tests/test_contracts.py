@@ -17,8 +17,13 @@ REQUEST_SCHEMA_PATH = CONTRACTS_DIR / "recommendations.request.json"
 RESPONSE_SCHEMA_PATH = CONTRACTS_DIR / "recommendations.response.json"
 
 VALID_REQUEST: dict[str, Any] = {"showIds": [1, 2, 3]}
-VALID_RESPONSE: dict[str, Any] = {"recommendedShowIds": [123, 456, 789]}
-
+VALID_RESPONSE: dict[str, Any] = {
+    "recommendations": [
+        {"showId": 123, "score": 98},
+        {"showId": 456, "score": 91},
+        {"showId": 789, "score": 85},
+    ]
+}
 INVALID_REQUESTS = [
     pytest.param({}, id="missing-showIds"),
     pytest.param({"showIds": []}, id="empty-showIds"),
@@ -94,7 +99,7 @@ def test_api_response_matches_contract(
 
     monkeypatch.setattr(
         "index.recommend",
-        AsyncMock(return_value=VALID_RESPONSE["recommendedShowIds"]),
+        AsyncMock(return_value=VALID_RESPONSE["recommendations"]),
     )
 
     response = client.post(

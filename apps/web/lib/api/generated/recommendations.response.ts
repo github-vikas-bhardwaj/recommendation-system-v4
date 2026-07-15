@@ -5,5 +5,11 @@
  */
 
 export interface RecommendationsResponse {
-  recommendedShowIds: number[];
+  recommendations: {
+    showId: number;
+    /**
+     * Similarity as a percentage (0-100).
+     */
+    score: number;
+  }[];
 }

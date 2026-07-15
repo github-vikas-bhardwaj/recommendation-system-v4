@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -11,4 +13,4 @@ class RecommendationsRequest(BaseModel):
         extra="forbid",
         populate_by_name=True,
     )
-    show_ids: list[int] = Field(..., alias="showIds", min_length=1)
+    show_ids: Annotated[list[int], Field(alias="showIds", min_length=1)]

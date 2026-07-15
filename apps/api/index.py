@@ -42,4 +42,4 @@ async def recommendations(
         http_request.app.state.db_pool,
         request.show_ids,
     )
-    return {"recommendedShowIds": recommended}
+    return {"recommendations": recommended}

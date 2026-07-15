@@ -22,10 +22,10 @@ export async function RecommendedShowsSection({
     );
   }
 
-  let recommendedShowIds: number[] = [];
+  let recommendations: { showId: number; score: number }[] = [];
   try {
     const result = await fetchRecommendations(seedShowIds);
-    recommendedShowIds = result.recommendedShowIds;
+    recommendations = result.recommendations;
   } catch {
     return (
       <ShowCardGrid
@@ -37,12 +37,17 @@ export async function RecommendedShowsSection({
     );
   }
 
-  const shows = await getShowsByIds(recommendedShowIds);
+  const showIds = recommendations.map((item) => item.showId);
+  const matchScoresById = new Map(
+    recommendations.map((item) => [item.showId, item.score]),
+  );
+  const shows = await getShowsByIds(showIds);
 
   return (
     <ShowCardGrid
       shows={shows}
       watchedShowIds={watchedShowIds}
+      matchScoresById={matchScoresById}
       emptyTitle="No recommendations yet"
       emptyDescription="We couldn't find similar titles. Watch a few more shows and try again."
     />
