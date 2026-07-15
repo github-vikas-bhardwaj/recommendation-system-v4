@@ -12,7 +12,12 @@ vi.mock("@/lib/db/supabase/admin", () => ({
   createAdminClient,
 }));
 
-import { getShowById, listShows, ShowsQueryError } from "./queries";
+import {
+  getShowById,
+  getShowsByIds,
+  listShows,
+  ShowsQueryError,
+} from "./queries";
 
 const sampleRow = {
   id: 1,
@@ -122,6 +127,35 @@ describe("getShowById", () => {
     });
 
     await expect(getShowById(1)).rejects.toBeInstanceOf(ShowsQueryError);
+  });
+});
+
+describe("getShowsByIds", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns shows in the requested order", async () => {
+    const secondRow = { ...sampleRow, id: 2, name: "Second Show" };
+    createAdminClient.mockReturnValue({
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          in: vi.fn().mockResolvedValue({
+            data: [secondRow, sampleRow],
+            error: null,
+          }),
+        })),
+      })),
+    });
+
+    const shows = await getShowsByIds([1, 2]);
+    expect(shows.map((show) => show.id)).toEqual([1, 2]);
+    expect(shows[0]?.name).toBe("Under the Dome");
+  });
+
+  it("returns an empty list for an empty id array", async () => {
+    await expect(getShowsByIds([])).resolves.toEqual([]);
+    expect(createAdminClient).not.toHaveBeenCalled();
   });
 });
 

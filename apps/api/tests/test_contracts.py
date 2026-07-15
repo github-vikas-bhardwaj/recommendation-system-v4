@@ -88,7 +88,15 @@ def test_api_response_matches_contract(
     client,
     auth_headers: dict[str, str],
     response_schema: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from unittest.mock import AsyncMock
+
+    monkeypatch.setattr(
+        "index.recommend",
+        AsyncMock(return_value=VALID_RESPONSE["recommendedShowIds"]),
+    )
+
     response = client.post(
         "/recommendations",
         json=VALID_REQUEST,

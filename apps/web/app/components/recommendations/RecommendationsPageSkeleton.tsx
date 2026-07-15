@@ -1,6 +1,7 @@
 import { SkeletonBlock } from "@/app/components/ui/SkeletonBlock";
 
 import { RecommendationPillSkeleton } from "./RecommendationPillSkeleton";
+import { RecommendedShowsSkeleton } from "./RecommendedShowsSkeleton";
 
 const PILL_SKELETON_COUNT = 10;
 
@@ -9,7 +10,7 @@ export function RecommendationsPageSkeleton() {
     <div
       aria-busy="true"
       aria-label="Loading recommendations"
-      className="mx-auto max-w-5xl space-y-8"
+      className="mx-auto max-w-7xl space-y-8"
     >
       <header className="space-y-2">
         <p className="text-xs font-medium tracking-widest text-violet-300 uppercase">
@@ -21,13 +22,24 @@ export function RecommendationsPageSkeleton() {
         <SkeletonBlock className="h-4 w-full max-w-2xl" />
       </header>
 
-      <ul className="flex flex-wrap gap-3">
-        {Array.from({ length: PILL_SKELETON_COUNT }).map((_, index) => (
-          <li key={index}>
-            <RecommendationPillSkeleton />
-          </li>
-        ))}
-      </ul>
+      <section className="space-y-4">
+        <SkeletonBlock className="h-4 w-20" />
+        <ul className="flex flex-wrap gap-3">
+          {Array.from({ length: PILL_SKELETON_COUNT }).map((_, index) => (
+            <li key={index}>
+              <RecommendationPillSkeleton />
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="space-y-4">
+        <div className="space-y-2">
+          <SkeletonBlock className="h-4 w-16" />
+          <SkeletonBlock className="h-4 w-64 max-w-full" />
+        </div>
+        <RecommendedShowsSkeleton />
+      </section>
     </div>
   );
 }

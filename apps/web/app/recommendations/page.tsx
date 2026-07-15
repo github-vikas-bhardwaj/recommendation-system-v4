@@ -1,35 +1,22 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { RecommendationPillList } from "@/app/components/recommendations/RecommendationPillList";
-import { RecommendationsHeader } from "@/app/components/recommendations/RecommendationsHeader";
+import { RecommendationsPageContent } from "@/app/components/recommendations/RecommendationsPageContent";
 import { RecommendationsPageShell } from "@/app/components/recommendations/RecommendationsPageShell";
-import { fetchRecommendations } from "@/lib/api/recommendations";
-import { listWatchedShows } from "@/lib/watched/queries";
+import { RecommendationsPageSkeleton } from "@/app/components/recommendations/RecommendationsPageSkeleton";
 
 export const metadata: Metadata = {
   title: "Recommendations — ReelMind",
   description: "Your personalized movie and show recommendations.",
 };
 
-export default async function RecommendationsPage() {
-  const watchedShows = await listWatchedShows();
-  const showIds = watchedShows.map((show) => show.id);
-
-  // Stub phase: call the BFF, but don't fail the page if the API is down
-  // (Playwright CI, Render cold start). Wire ui to apiResult next.
-  try {
-    await fetchRecommendations(showIds);
-  } catch {
-    // Intentionally ignored until recommendations UI consumes the response.
-  }
-
+export default function RecommendationsPage() {
   return (
     <RecommendationsPageShell>
-      <div className="mx-auto max-w-5xl space-y-8">
-        <RecommendationsHeader count={watchedShows.length} />
-        <section aria-label="Watched shows">
-          <RecommendationPillList shows={watchedShows} />
-        </section>
+      <div className="mx-auto max-w-7xl space-y-8">
+        <Suspense fallback={<RecommendationsPageSkeleton />}>
+          <RecommendationsPageContent />
+        </Suspense>
       </div>
     </RecommendationsPageShell>
   );

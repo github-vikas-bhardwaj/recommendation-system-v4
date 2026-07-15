@@ -9,9 +9,7 @@ export function Footer() {
         <Suspense
           fallback={
             <p className="text-sm text-zinc-500">
-              <p className="text-sm text-zinc-500">
-                © .... ReelMind. All rights reserved.
-              </p>
+              © …. ReelMind. All rights reserved.
             </p>
           }
         >
