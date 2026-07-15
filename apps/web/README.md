@@ -21,12 +21,12 @@ Two layers — **strict locally**, **flexible on Vercel**:
 | File                            | Value                | Role                                               |
 | ------------------------------- | -------------------- | -------------------------------------------------- |
 | `apps/web/.nvmrc`               | `24.18.0`            | Local exact pin — `nvm use`, matches root `.nvmrc` |
-| `package.json` → `engines.node` | `>=24.18.0`          | `npm ci` / Vercel — accepts host 24.x patch        |
+| `package.json` → `engines.node` | `>=24.0.0`           | `npm ci` / Vercel — accepts any host `24.x` patch  |
 | `apps/web/.npmrc`               | `engine-strict=true` | Enforce `engines` on install                       |
 
 **Not in `engines`:** `npm` — Vercel bundles its own npm version; pinning it causes `EBADENGINE`.
 
-Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **exact** `24.18.0` via `validate:node`; Vercel only needs `>=24.18.0`.
+Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **exact** `24.18.0` via `validate:node`; Vercel only needs `>=24.0.0` (host may be e.g. `24.15.0`).
 
 ## Deploy (Vercel)
 
@@ -69,12 +69,12 @@ Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **e
 
 **Common failures:**
 
-| Symptom                                 | Fix                                                          |
-| --------------------------------------- | ------------------------------------------------------------ |
-| `EBADENGINE`                            | `engines.node` = `>=24.18.0`, drop `engines.npm`             |
-| Sitewide `404: NOT_FOUND`               | Framework = Next.js, Root Directory = `apps/web`, redeploy   |
-| `apiUrlConfigured: false`               | Set `API_URL` → redeploy                                     |
-| Build `Missing environment variable: …` | Add full [env table](#first-time-setup) on Vercel → redeploy |
+| Symptom                                 | Fix                                                                |
+| --------------------------------------- | ------------------------------------------------------------------ |
+| `EBADENGINE`                            | `engines.node` = `>=24.0.0` (not a laptop patch), no `engines.npm` |
+| Sitewide `404: NOT_FOUND`               | Framework = Next.js, Root Directory = `apps/web`, redeploy         |
+| `apiUrlConfigured: false`               | Set `API_URL` → redeploy                                           |
+| Build `Missing environment variable: …` | Add full [env table](#first-time-setup) on Vercel → redeploy       |
 
 **Vercel deploys before CI finishes:** enable [Deployment Checks](https://vercel.com/docs/deployments/deployment-checks) and require GitHub check **`CI OK`**. See [root README — Vercel](../../README.md#vercel-web).
 

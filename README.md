@@ -78,12 +78,12 @@ npm run validate:runtime     # Node 24.18.0 + Python 3.12.12 via uv
 
 Node uses **two layers** — same idea as Python (`.python-version` + `requires-python`):
 
-| File / setting                               | Value                | Role                                                       |
-| -------------------------------------------- | -------------------- | ---------------------------------------------------------- |
-| `.nvmrc` (root + `apps/web`)                 | `24.18.0`            | **Local exact pin** — `nvm use`, `validate:node` on commit |
-| `package.json` → `engines.node` (root + web) | `>=24.18.0`          | **Install / deploy floor** — `engine-strict` on `npm ci`   |
-| `.npmrc`                                     | `engine-strict=true` | Fail `npm install` / `npm ci` if Node below `engines`      |
-| Vercel dashboard                             | Node **24.x**        | Host picks a 24.x patch — must satisfy `>=24.18.0`         |
+| File / setting                               | Value                | Role                                                         |
+| -------------------------------------------- | -------------------- | ------------------------------------------------------------ |
+| `.nvmrc` (root + `apps/web`)                 | `24.18.0`            | **Local exact pin** — `nvm use`, `validate:node` on commit   |
+| `package.json` → `engines.node` (root + web) | `>=24.0.0`           | **Install / deploy floor** — accepts any Vercel `24.x` patch |
+| `.npmrc`                                     | `engine-strict=true` | Fail `npm install` / `npm ci` if Node below `engines`        |
+| Vercel dashboard                             | Node **24.x**        | Host picks patch (e.g. `24.15.0`) — must satisfy `>=24.0.0`  |
 
 **Why not pin exact Node in `engines`?**
 
@@ -95,7 +95,7 @@ Vercel only lets you select **major** Node (`24.x`) and may use a different **pa
 
 ```
 Local:   .nvmrc 24.18.0  →  validate:node (strict on commit)
-Deploy:  engines >=24.18.0  →  Vercel 24.x passes npm ci
+Deploy:  engines >=24.0.0   →  Vercel 24.x (any patch) passes npm ci
 ```
 
 When bumping Node intentionally: update **both** `.nvmrc` files, then retest CI and Vercel.
@@ -355,7 +355,7 @@ detect-changes
 | Node `24.18.0`   | `.nvmrc` via `node-version-file` in Actions      |
 | Python `3.12.12` | `apps/api/.python-version` via `setup-uv@v8.3.0` |
 
-CI pins **exact** Node in Actions; Vercel uses `engines` (`>=24.18.0`) instead — see [Node version strategy](#node-version-strategy).
+CI pins **exact** Node in Actions; Vercel uses `engines` (`>=24.0.0`) instead — see [Node version strategy](#node-version-strategy).
 
 ## Deployment
 
@@ -464,7 +464,7 @@ Details: [apps/api/README.md](apps/api/README.md#deploy-render).
 | Symptom                                                               | Fix                                                               |
 | --------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | Vercel sitewide `404: NOT_FOUND`                                      | Root Directory = `apps/web`, Framework = **Next.js**, redeploy    |
-| Vercel `EBADENGINE`                                                   | `engines.node` = `>=24.18.0`, no `engines.npm`                    |
+| Vercel `EBADENGINE`                                                   | `engines.node` = `>=24.0.0` (not `>=24.18.0`), no `engines.npm`   |
 | Vercel build `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` | Add all vars in [Vercel env table](#vercel-web) → redeploy        |
 | Render build fails                                                    | Root Directory = `apps/api`, use `uv sync` not `requirements.txt` |
 | Slow first API request                                                | Render free tier cold start after sleep                           |
