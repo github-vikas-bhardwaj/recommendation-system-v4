@@ -18,15 +18,15 @@ Next.js frontend for the recommendation system. Acts as the **public entry** and
 
 Two layers — **strict locally**, **flexible on Vercel**:
 
-| File                            | Value                | Role                                                    |
-| ------------------------------- | -------------------- | ------------------------------------------------------- |
-| `apps/web/.nvmrc`               | `22.22.1`            | Local exact pin — `nvm use`, matches root `.nvmrc`      |
-| `package.json` → `engines.node` | `>=22.22.0`          | `npm ci` / Vercel — accepts host patch (e.g. `22.22.2`) |
-| `apps/web/.npmrc`               | `engine-strict=true` | Enforce `engines` on install                            |
+| File                            | Value                | Role                                               |
+| ------------------------------- | -------------------- | -------------------------------------------------- |
+| `apps/web/.nvmrc`               | `24.18.0`            | Local exact pin — `nvm use`, matches root `.nvmrc` |
+| `package.json` → `engines.node` | `>=24.18.0`          | `npm ci` / Vercel — accepts host 24.x patch        |
+| `apps/web/.npmrc`               | `engine-strict=true` | Enforce `engines` on install                       |
 
 **Not in `engines`:** `npm` — Vercel bundles its own npm version; pinning it causes `EBADENGINE`.
 
-Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **exact** `22.22.1` via `validate:node`; Vercel only needs `>=22.22.0`.
+Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **exact** `24.18.0` via `validate:node`; Vercel only needs `>=24.18.0`.
 
 ## Deploy (Vercel)
 
@@ -37,7 +37,7 @@ Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **e
 
 1. Import repo → **Root Directory:** `apps/web`
 2. **Framework Preset:** **Next.js** (not Other — sitewide 404 if wrong)
-3. **Node.js Version:** `22.x` in project settings
+3. **Node.js Version:** `24.x` in project settings
 4. Add env vars (**Production** + **Preview**), then deploy
 
 | Variable                                              | Production example                                                              |
@@ -71,7 +71,7 @@ Use `nvm use` at repo root or in `apps/web` before local work. Hooks enforce **e
 
 | Symptom                                 | Fix                                                          |
 | --------------------------------------- | ------------------------------------------------------------ |
-| `EBADENGINE`                            | `engines.node` = `>=22.22.0`, drop `engines.npm`             |
+| `EBADENGINE`                            | `engines.node` = `>=24.18.0`, drop `engines.npm`             |
 | Sitewide `404: NOT_FOUND`               | Framework = Next.js, Root Directory = `apps/web`, redeploy   |
 | `apiUrlConfigured: false`               | Set `API_URL` → redeploy                                     |
 | Build `Missing environment variable: …` | Add full [env table](#first-time-setup) on Vercel → redeploy |

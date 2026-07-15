@@ -15,7 +15,7 @@ recommendation-system-v4/
 │   └── codegen-contracts.mjs   # Generate TS + Pydantic from schemas
 ├── .github/workflows/          # GitHub Actions CI
 ├── .husky/                     # Git hooks (pre-commit, pre-push, commit-msg)
-├── .nvmrc                      # Node 22.22.1 — local dev pin (see Node version strategy)
+├── .nvmrc                      # Node 24.18.0 — local dev pin (see Node version strategy)
 ├── .npmrc                      # engine-strict=true
 ├── .vscode/                    # Shared editor settings
 ├── commitlint.config.ts        # Conventional commit rules
@@ -42,10 +42,10 @@ recommendation-system-v4/
 
 ### First time (repo root)
 
-**Prerequisites:** Node **22.22.1** locally (`nvm use` — see [Node version strategy](#node-version-strategy)), [uv](https://docs.astral.sh/uv/) for Python **3.12.12**.
+**Prerequisites:** Node **24.18.0** locally (`nvm use` — see [Node version strategy](#node-version-strategy)), [uv](https://docs.astral.sh/uv/) for Python **3.12.12**.
 
 ```bash
-nvm use                      # reads .nvmrc → 22.22.1
+nvm use                      # reads .nvmrc → 24.18.0
 npm install
 npm run prepare              # Husky hooks
 npm run sync:api             # Python deps (apps/api)
@@ -57,7 +57,7 @@ cp apps/web/.env.example apps/web/.env.local
 Verify runtimes:
 
 ```bash
-npm run validate:runtime     # Node 22.22.1 + Python 3.12.12 via uv
+npm run validate:runtime     # Node 24.18.0 + Python 3.12.12 via uv
 ```
 
 ### Run dev servers
@@ -78,24 +78,24 @@ npm run validate:runtime     # Node 22.22.1 + Python 3.12.12 via uv
 
 Node uses **two layers** — same idea as Python (`.python-version` + `requires-python`):
 
-| File / setting                               | Value                | Role                                                         |
-| -------------------------------------------- | -------------------- | ------------------------------------------------------------ |
-| `.nvmrc` (root + `apps/web`)                 | `22.22.1`            | **Local exact pin** — `nvm use`, `validate:node` on commit   |
-| `package.json` → `engines.node` (root + web) | `>=22.22.0`          | **Install / deploy floor** — `engine-strict` on `npm ci`     |
-| `.npmrc`                                     | `engine-strict=true` | Fail `npm install` / `npm ci` if Node below `engines`        |
-| Vercel dashboard                             | Node **22.x**        | Host picks patch (e.g. `22.22.2`) — must satisfy `>=22.22.0` |
+| File / setting                               | Value                | Role                                                       |
+| -------------------------------------------- | -------------------- | ---------------------------------------------------------- |
+| `.nvmrc` (root + `apps/web`)                 | `24.18.0`            | **Local exact pin** — `nvm use`, `validate:node` on commit |
+| `package.json` → `engines.node` (root + web) | `>=24.18.0`          | **Install / deploy floor** — `engine-strict` on `npm ci`   |
+| `.npmrc`                                     | `engine-strict=true` | Fail `npm install` / `npm ci` if Node below `engines`      |
+| Vercel dashboard                             | Node **24.x**        | Host picks a 24.x patch — must satisfy `>=24.18.0`         |
 
 **Why not pin exact Node in `engines`?**
 
-Vercel only lets you select **major** Node (`22.x`) and may use a different **patch** than your laptop. Exact pins like `"node": "22.22.1"` or `"npm": "10.9.4"` cause `EBADENGINE` on deploy.
+Vercel only lets you select **major** Node (`24.x`) and may use a different **patch** than your laptop. Exact pins like `"node": "24.18.0"` or `"npm": "11.x.x"` cause `EBADENGINE` on deploy.
 
 **Do not pin `npm` in `engines`** — Vercel controls npm; only pin Node range.
 
 **Local vs deploy:**
 
 ```
-Local:   .nvmrc 22.22.1  →  validate:node (strict on commit)
-Deploy:  engines >=22.22.0  →  Vercel 22.22.x passes npm ci
+Local:   .nvmrc 24.18.0  →  validate:node (strict on commit)
+Deploy:  engines >=24.18.0  →  Vercel 24.x passes npm ci
 ```
 
 When bumping Node intentionally: update **both** `.nvmrc` files, then retest CI and Vercel.
@@ -163,7 +163,7 @@ See [packages/api-contracts/README.md](packages/api-contracts/README.md).
 
 Runs on every `git commit`:
 
-1. **`validate:runtime`** — Node **exact** `22.22.1` (from `.nvmrc`) + Python `3.12.12` (via uv)
+1. **`validate:runtime`** — Node **exact** `24.18.0` (from `.nvmrc`) + Python `3.12.12` (via uv)
 2. **Branch name validation** — blocks direct commits to `main`, `develop`, etc.
 3. **lint-staged** — auto-fix staged files (see below)
 4. **`npm run format:check`** — Prettier on whole repo
@@ -352,10 +352,10 @@ detect-changes
 
 | Runtime          | Source                                           |
 | ---------------- | ------------------------------------------------ |
-| Node `22.22.1`   | `.nvmrc` via `node-version-file` in Actions      |
+| Node `24.18.0`   | `.nvmrc` via `node-version-file` in Actions      |
 | Python `3.12.12` | `apps/api/.python-version` via `setup-uv@v8.3.0` |
 
-CI pins **exact** Node in Actions; Vercel uses `engines` (`>=22.22.0`) instead — see [Node version strategy](#node-version-strategy).
+CI pins **exact** Node in Actions; Vercel uses `engines` (`>=24.18.0`) instead — see [Node version strategy](#node-version-strategy).
 
 ## Deployment
 
@@ -403,7 +403,7 @@ Protected API routes require:
 | -------------------- | ----------------------- |
 | **Root Directory**   | `apps/web`              |
 | **Framework Preset** | **Next.js** (not Other) |
-| **Node.js Version**  | `22.x`                  |
+| **Node.js Version**  | `24.x`                  |
 | **Build Command**    | `npm run build`         |
 | **Install Command**  | `npm ci`                |
 | **Output Directory** | default (blank)         |
@@ -464,7 +464,7 @@ Details: [apps/api/README.md](apps/api/README.md#deploy-render).
 | Symptom                                                               | Fix                                                               |
 | --------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | Vercel sitewide `404: NOT_FOUND`                                      | Root Directory = `apps/web`, Framework = **Next.js**, redeploy    |
-| Vercel `EBADENGINE`                                                   | `engines.node` = `>=22.22.0`, no `engines.npm`                    |
+| Vercel `EBADENGINE`                                                   | `engines.node` = `>=24.18.0`, no `engines.npm`                    |
 | Vercel build `Missing environment variable: NEXT_PUBLIC_SUPABASE_URL` | Add all vars in [Vercel env table](#vercel-web) → redeploy        |
 | Render build fails                                                    | Root Directory = `apps/api`, use `uv sync` not `requirements.txt` |
 | Slow first API request                                                | Render free tier cold start after sleep                           |

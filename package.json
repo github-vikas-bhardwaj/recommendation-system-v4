@@ -4,7 +4,7 @@
   "description": "Monorepo for a **GenAI-based movie/show recommendation system**.",
   "main": "index.js",
   "engines": {
-    "node": ">=22.22.0"
+    "node": ">=24.18.0"
   },
   "scripts": {
     "prepare": "husky",
