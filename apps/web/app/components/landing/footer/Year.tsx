@@ -1,3 +1,5 @@
+"use client";
+
 export function Year() {
   return (
     <p className="text-sm text-zinc-500">
